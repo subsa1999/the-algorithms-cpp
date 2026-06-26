@@ -107,6 +107,11 @@ int main() {
     input_array = new int[n];
     segment_tree = new int[4 * n];
 
+    // fill default values in the segment tree
+    for (int i = 0; i < 4 * n; i++) {
+        segment_tree[i] = INT_MAX;
+    }
+
     // take input for the array
     cout << "Enter the elements of the array: ";
     for (int i = 0; i < n; i++) {
