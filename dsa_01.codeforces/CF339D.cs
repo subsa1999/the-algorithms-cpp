@@ -1,3 +1,6 @@
+// https://codeforces.com/contest/339/submission/380962415
+// @author: subsa
+
 namespace dsa_01.codeforces
 {
     public class CF339D
