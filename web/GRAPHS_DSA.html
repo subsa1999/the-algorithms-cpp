@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph Algorithms — Basic to Advanced</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="layout-dsa accent-blue">
+<div class="wrapper">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="back-nav"><a href="index.html">? Back to Paperwork</a></div>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Graph Representations</a></li>
+    <li><a href="#s2">BFS — Breadth-First Search</a></li>
+    <li><a href="#s3">DFS — Depth-First Search</a></li>
+    <li><a href="#s4">Cycle Detection</a></li>
+    <li><a href="#s5">Topological Sort</a></li>
+    <li><a href="#s6">Shortest Path Algorithms</a></li>
+    <li><a href="#s7">Minimum Spanning Tree</a></li>
+    <li><a href="#s8">Union-Find / DSU</a></li>
+    <li><a href="#s9">Bipartite Graph</a></li>
+    <li><a href="#s10">Strongly Connected Components</a></li>
+    <li><a href="#s11">Bridges &amp; Articulation Points</a></li>
+    <li><a href="#s12">Euler Path &amp; Circuit</a></li>
+    <li><a href="#s13">Network Flow / Max Flow</a></li>
+    <li><a href="#s14">Graph Coloring</a></li>
+    <li><a href="#s15">Advanced Patterns</a></li>
+    <li><a href="#s16">Master Problem List</a></li>
+  </ol>
+</nav>
+
+<!-- ── Main Content ── -->
+<main class="content">
+
+<!-- Hero -->
+<header class="hero">
+  <h1>Graph Algorithms — Basic to Advanced</h1>
+  <p class="subtitle">Complete reference with patterns, templates, and curated problems.</p>
+</header>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 1 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s1"><span class="section-num">1.</span> Graph Representations</h2>
+
+<h3>Adjacency List (Most Common)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Unweighted</span>
+graph = defaultdict(list)
+<span class="kw">for</span> u, v <span class="kw">in</span> edges:
+    graph[u].<span class="fn">append</span>(v)
+    graph[v].<span class="fn">append</span>(u)  <span class="cmt"># undirected</span>
+
+<span class="cmt"># Weighted</span>
+graph = defaultdict(list)
+<span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+    graph[u].<span class="fn">append</span>((v, w))
+    graph[v].<span class="fn">append</span>((u, w))  <span class="cmt"># undirected</span></code></pre>
+
+<h3>Adjacency Matrix</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># n x n matrix, good when |V| is small or graph is dense</span>
+matrix = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+<span class="kw">for</span> u, v <span class="kw">in</span> edges:
+    matrix[u][v] = <span class="num">1</span>
+    matrix[v][u] = <span class="num">1</span>  <span class="cmt"># undirected</span></code></pre>
+
+<h3>Edge List</h3>
+<pre><span class="lang-tag">python</span><code>edges = [(u, v, weight), ...]  <span class="cmt"># Used in Kruskal's, Bellman-Ford</span></code></pre>
+
+<h3>When to Use What</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Representation</th><th>Space</th><th>Edge Lookup</th><th>Best For</th></tr></thead>
+  <tbody>
+    <tr><td>Adjacency List</td><td>O(V+E)</td><td>O(degree)</td><td>Sparse graphs, most problems</td></tr>
+    <tr><td>Adjacency Matrix</td><td>O(V²)</td><td>O(1)</td><td>Dense graphs, Floyd-Warshall</td></tr>
+    <tr><td>Edge List</td><td>O(E)</td><td>O(E)</td><td>Kruskal's, Bellman-Ford</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 2 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s2"><span class="section-num">2.</span> BFS — Breadth-First Search</h2>
+
+<h3>Pattern: Level-order traversal / Shortest path in unweighted graphs</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">bfs</span>(graph, start):
+    visited = {start}
+    queue = deque([start])
+    <span class="kw">while</span> queue:
+        node = queue.<span class="fn">popleft</span>()
+        <span class="kw">for</span> neighbor <span class="kw">in</span> graph[node]:
+            <span class="kw">if</span> neighbor <span class="kw">not</span> <span class="kw">in</span> visited:
+                visited.<span class="fn">add</span>(neighbor)
+                queue.<span class="fn">append</span>(neighbor)</code></pre>
+
+<h3>BFS with Distance Tracking</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">bfs_distance</span>(graph, start):
+    dist = {start: <span class="num">0</span>}
+    queue = deque([start])
+    <span class="kw">while</span> queue:
+        node = queue.<span class="fn">popleft</span>()
+        <span class="kw">for</span> neighbor <span class="kw">in</span> graph[node]:
+            <span class="kw">if</span> neighbor <span class="kw">not</span> <span class="kw">in</span> dist:
+                dist[neighbor] = dist[node] + <span class="num">1</span>
+                queue.<span class="fn">append</span>(neighbor)
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>Multi-Source BFS</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Start BFS from multiple sources simultaneously</span>
+<span class="cmt"># Used for: "minimum distance from any source" problems</span>
+<span class="kw">def</span> <span class="fn">multi_source_bfs</span>(grid, sources):
+    queue = deque()
+    dist = {}
+    <span class="kw">for</span> r, c <span class="kw">in</span> sources:
+        queue.<span class="fn">append</span>((r, c))
+        dist[(r, c)] = <span class="num">0</span>
+    <span class="kw">while</span> queue:
+        r, c = queue.<span class="fn">popleft</span>()
+        <span class="kw">for</span> dr, dc <span class="kw">in</span> [(<span class="num">0</span>,<span class="num">1</span>),(<span class="num">0</span>,-<span class="num">1</span>),(<span class="num">1</span>,<span class="num">0</span>),(-<span class="num">1</span>,<span class="num">0</span>)]:
+            nr, nc = r+dr, c+dc
+            <span class="kw">if</span> <span class="num">0</span> &lt;= nr &lt; <span class="bi">len</span>(grid) <span class="kw">and</span> <span class="num">0</span> &lt;= nc &lt; <span class="bi">len</span>(grid[<span class="num">0</span>]) <span class="kw">and</span> (nr, nc) <span class="kw">not</span> <span class="kw">in</span> dist:
+                dist[(nr, nc)] = dist[(r, c)] + <span class="num">1</span>
+                queue.<span class="fn">append</span>((nr, nc))
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>0-1 BFS (Deque-based, weights 0 or 1)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">bfs_01</span>(graph, start, n):
+    dist = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * n
+    dist[start] = <span class="num">0</span>
+    dq = deque([start])
+    <span class="kw">while</span> dq:
+        u = dq.<span class="fn">popleft</span>()
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:  <span class="cmt"># w is 0 or 1</span>
+            <span class="kw">if</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                <span class="kw">if</span> w == <span class="num">0</span>:
+                    dq.<span class="fn">appendleft</span>(v)
+                <span class="kw">else</span>:
+                    dq.<span class="fn">append</span>(v)
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>Problems — BFS</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Number of Islands</td><td><span class="badge medium">Medium</span></td><td>Grid BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-islands/">200</a></td></tr>
+    <tr><td>2</td><td>Rotting Oranges</td><td><span class="badge medium">Medium</span></td><td>Multi-source BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/rotting-oranges/">994</a></td></tr>
+    <tr><td>3</td><td>01 Matrix</td><td><span class="badge medium">Medium</span></td><td>Multi-source BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/01-matrix/">542</a></td></tr>
+    <tr><td>4</td><td>Shortest Path in Binary Matrix</td><td><span class="badge medium">Medium</span></td><td>BFS shortest path</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-in-binary-matrix/">1091</a></td></tr>
+    <tr><td>5</td><td>Word Ladder</td><td><span class="badge hard">Hard</span></td><td>BFS + state space</td><td><a class="lc-link" href="https://leetcode.com/problems/word-ladder/">127</a></td></tr>
+    <tr><td>6</td><td>Open the Lock</td><td><span class="badge medium">Medium</span></td><td>BFS + state space</td><td><a class="lc-link" href="https://leetcode.com/problems/open-the-lock/">752</a></td></tr>
+    <tr><td>7</td><td>Walls and Gates</td><td><span class="badge medium">Medium</span></td><td>Multi-source BFS</td><td>286</td></tr>
+    <tr><td>8</td><td>Minimum Knight Moves</td><td><span class="badge medium">Medium</span></td><td>BFS</td><td>1197</td></tr>
+    <tr><td>9</td><td>Shortest Bridge</td><td><span class="badge medium">Medium</span></td><td>DFS + BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-bridge/">934</a></td></tr>
+    <tr><td>10</td><td>Bus Routes</td><td><span class="badge hard">Hard</span></td><td>BFS on routes</td><td><a class="lc-link" href="https://leetcode.com/problems/bus-routes/">815</a></td></tr>
+    <tr><td>11</td><td>Minimum Genetic Mutation</td><td><span class="badge medium">Medium</span></td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-genetic-mutation/">433</a></td></tr>
+    <tr><td>12</td><td>Snakes and Ladders</td><td><span class="badge medium">Medium</span></td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/snakes-and-ladders/">909</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 3 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s3"><span class="section-num">3.</span> DFS — Depth-First Search</h2>
+
+<h3>Pattern: Explore as deep as possible, backtrack</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Recursive DFS</span>
+<span class="kw">def</span> <span class="fn">dfs</span>(graph, node, visited):
+    visited.<span class="fn">add</span>(node)
+    <span class="kw">for</span> neighbor <span class="kw">in</span> graph[node]:
+        <span class="kw">if</span> neighbor <span class="kw">not</span> <span class="kw">in</span> visited:
+            <span class="fn">dfs</span>(graph, neighbor, visited)
+
+<span class="cmt"># Iterative DFS</span>
+<span class="kw">def</span> <span class="fn">dfs_iterative</span>(graph, start):
+    visited = <span class="bi">set</span>()
+    stack = [start]
+    <span class="kw">while</span> stack:
+        node = stack.<span class="fn">pop</span>()
+        <span class="kw">if</span> node <span class="kw">in</span> visited:
+            <span class="kw">continue</span>
+        visited.<span class="fn">add</span>(node)
+        <span class="kw">for</span> neighbor <span class="kw">in</span> graph[node]:
+            <span class="kw">if</span> neighbor <span class="kw">not</span> <span class="kw">in</span> visited:
+                stack.<span class="fn">append</span>(neighbor)</code></pre>
+
+<h3>DFS on Grid</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">dfs_grid</span>(grid, r, c, visited):
+    <span class="kw">if</span> r &lt; <span class="num">0</span> <span class="kw">or</span> r &gt;= <span class="bi">len</span>(grid) <span class="kw">or</span> c &lt; <span class="num">0</span> <span class="kw">or</span> c &gt;= <span class="bi">len</span>(grid[<span class="num">0</span>]):
+        <span class="kw">return</span>
+    <span class="kw">if</span> (r, c) <span class="kw">in</span> visited <span class="kw">or</span> grid[r][c] == <span class="num">0</span>:
+        <span class="kw">return</span>
+    visited.<span class="fn">add</span>((r, c))
+    <span class="kw">for</span> dr, dc <span class="kw">in</span> [(<span class="num">0</span>,<span class="num">1</span>),(<span class="num">0</span>,-<span class="num">1</span>),(<span class="num">1</span>,<span class="num">0</span>),(-<span class="num">1</span>,<span class="num">0</span>)]:
+        <span class="fn">dfs_grid</span>(grid, r+dr, c+dc, visited)</code></pre>
+
+<h3>DFS with Entry/Exit Time</h3>
+<pre><span class="lang-tag">python</span><code>timer = <span class="num">0</span>
+tin = [<span class="num">0</span>] * n   <span class="cmt"># entry time</span>
+tout = [<span class="num">0</span>] * n  <span class="cmt"># exit time</span>
+
+<span class="kw">def</span> <span class="fn">dfs_time</span>(u, parent):
+    <span class="kw">global</span> timer
+    timer += <span class="num">1</span>
+    tin[u] = timer
+    <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+        <span class="kw">if</span> v != parent:
+            <span class="fn">dfs_time</span>(v, u)
+    timer += <span class="num">1</span>
+    tout[u] = timer
+
+<span class="cmt"># u is ancestor of v iff tin[u] &lt;= tin[v] and tout[u] &gt;= tout[v]</span></code></pre>
+
+<h3>Problems — DFS</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Number of Islands</td><td><span class="badge medium">Medium</span></td><td>Grid DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-islands/">200</a></td></tr>
+    <tr><td>2</td><td>Clone Graph</td><td><span class="badge medium">Medium</span></td><td>DFS + HashMap</td><td><a class="lc-link" href="https://leetcode.com/problems/clone-graph/">133</a></td></tr>
+    <tr><td>3</td><td>Max Area of Island</td><td><span class="badge medium">Medium</span></td><td>Grid DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/max-area-of-island/">695</a></td></tr>
+    <tr><td>4</td><td>Surrounded Regions</td><td><span class="badge medium">Medium</span></td><td>Border DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/surrounded-regions/">130</a></td></tr>
+    <tr><td>5</td><td>Pacific Atlantic Water Flow</td><td><span class="badge medium">Medium</span></td><td>Reverse DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/pacific-atlantic-water-flow/">417</a></td></tr>
+    <tr><td>6</td><td>Number of Provinces</td><td><span class="badge medium">Medium</span></td><td>Connected Components</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-provinces/">547</a></td></tr>
+    <tr><td>7</td><td>All Paths From Source to Target</td><td><span class="badge medium">Medium</span></td><td>DFS/Backtrack on DAG</td><td><a class="lc-link" href="https://leetcode.com/problems/all-paths-from-source-to-target/">797</a></td></tr>
+    <tr><td>8</td><td>Reconstruct Itinerary</td><td><span class="badge hard">Hard</span></td><td>Eulerian Path DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/reconstruct-itinerary/">332</a></td></tr>
+    <tr><td>9</td><td>Flood Fill</td><td><span class="badge easy">Easy</span></td><td>Grid DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/flood-fill/">733</a></td></tr>
+    <tr><td>10</td><td>Number of Enclaves</td><td><span class="badge medium">Medium</span></td><td>Border DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-enclaves/">1020</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 4 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s4"><span class="section-num">4.</span> Cycle Detection</h2>
+
+<h3>Undirected Graph — DFS</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">has_cycle_undirected</span>(graph, n):
+    visited = <span class="bi">set</span>()
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(node, parent):
+        visited.<span class="fn">add</span>(node)
+        <span class="kw">for</span> neighbor <span class="kw">in</span> graph[node]:
+            <span class="kw">if</span> neighbor <span class="kw">not</span> <span class="kw">in</span> visited:
+                <span class="kw">if</span> <span class="fn">dfs</span>(neighbor, node):
+                    <span class="kw">return</span> <span class="bi">True</span>
+            <span class="kw">elif</span> neighbor != parent:
+                <span class="kw">return</span> <span class="bi">True</span>  <span class="cmt"># back edge = cycle</span>
+        <span class="kw">return</span> <span class="bi">False</span>
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> i <span class="kw">not</span> <span class="kw">in</span> visited:
+            <span class="kw">if</span> <span class="fn">dfs</span>(i, -<span class="num">1</span>):
+                <span class="kw">return</span> <span class="bi">True</span>
+    <span class="kw">return</span> <span class="bi">False</span></code></pre>
+
+<h3>Directed Graph — DFS with 3 Colors</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># WHITE=0 (unvisited), GRAY=1 (in current path), BLACK=2 (fully processed)</span>
+<span class="kw">def</span> <span class="fn">has_cycle_directed</span>(graph, n):
+    color = [<span class="num">0</span>] * n
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(u):
+        color[u] = <span class="num">1</span>  <span class="cmt"># GRAY</span>
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> color[v] == <span class="num">1</span>:
+                <span class="kw">return</span> <span class="bi">True</span>    <span class="cmt"># back edge → cycle</span>
+            <span class="kw">if</span> color[v] == <span class="num">0</span> <span class="kw">and</span> <span class="fn">dfs</span>(v):
+                <span class="kw">return</span> <span class="bi">True</span>
+        color[u] = <span class="num">2</span>  <span class="cmt"># BLACK</span>
+        <span class="kw">return</span> <span class="bi">False</span>
+
+    <span class="kw">return</span> <span class="bi">any</span>(color[i] == <span class="num">0</span> <span class="kw">and</span> <span class="fn">dfs</span>(i) <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n))</code></pre>
+
+<h3>Directed Graph — Kahn's (BFS Topological Sort)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># If topological sort doesn't include all nodes → cycle exists</span>
+<span class="kw">def</span> <span class="fn">has_cycle_kahn</span>(graph, n):
+    indegree = [<span class="num">0</span>] * n
+    <span class="kw">for</span> u <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            indegree[v] += <span class="num">1</span>
+    queue = deque(i <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n) <span class="kw">if</span> indegree[i] == <span class="num">0</span>)
+    count = <span class="num">0</span>
+    <span class="kw">while</span> queue:
+        u = queue.<span class="fn">popleft</span>()
+        count += <span class="num">1</span>
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            indegree[v] -= <span class="num">1</span>
+            <span class="kw">if</span> indegree[v] == <span class="num">0</span>:
+                queue.<span class="fn">append</span>(v)
+    <span class="kw">return</span> count != n  <span class="cmt"># True if cycle</span></code></pre>
+
+<h3>Problems — Cycle Detection</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Course Schedule</td><td><span class="badge medium">Medium</span></td><td>Directed cycle (Kahn's)</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule/">207</a></td></tr>
+    <tr><td>2</td><td>Course Schedule II</td><td><span class="badge medium">Medium</span></td><td>Topo sort + cycle check</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule-ii/">210</a></td></tr>
+    <tr><td>3</td><td>Redundant Connection</td><td><span class="badge medium">Medium</span></td><td>Undirected cycle (Union-Find)</td><td><a class="lc-link" href="https://leetcode.com/problems/redundant-connection/">684</a></td></tr>
+    <tr><td>4</td><td>Redundant Connection II</td><td><span class="badge hard">Hard</span></td><td>Directed cycle (Union-Find)</td><td><a class="lc-link" href="https://leetcode.com/problems/redundant-connection-ii/">685</a></td></tr>
+    <tr><td>5</td><td>Graph Valid Tree</td><td><span class="badge medium">Medium</span></td><td>Undirected acyclic check</td><td>261</td></tr>
+    <tr><td>6</td><td>Detect Cycles in 2D Grid</td><td><span class="badge medium">Medium</span></td><td>DFS 3-color on grid</td><td><a class="lc-link" href="https://leetcode.com/problems/detect-cycles-in-2d-grid/">1559</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 5 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s5"><span class="section-num">5.</span> Topological Sort</h2>
+
+<p><strong>Pattern:</strong> Linear ordering of vertices in a DAG such that for every edge u→v, u comes before v.</p>
+
+<h3>Kahn's Algorithm (BFS — preferred for interviews)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">topo_sort_kahn</span>(graph, n):
+    indegree = [<span class="num">0</span>] * n
+    <span class="kw">for</span> u <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            indegree[v] += <span class="num">1</span>
+
+    queue = deque(i <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n) <span class="kw">if</span> indegree[i] == <span class="num">0</span>)
+    order = []
+
+    <span class="kw">while</span> queue:
+        u = queue.<span class="fn">popleft</span>()
+        order.<span class="fn">append</span>(u)
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            indegree[v] -= <span class="num">1</span>
+            <span class="kw">if</span> indegree[v] == <span class="num">0</span>:
+                queue.<span class="fn">append</span>(v)
+
+    <span class="kw">return</span> order <span class="kw">if</span> <span class="bi">len</span>(order) == n <span class="kw">else</span> []  <span class="cmt"># empty if cycle</span></code></pre>
+
+<h3>DFS-based Topological Sort</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">topo_sort_dfs</span>(graph, n):
+    visited = <span class="bi">set</span>()
+    stack = []
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(u):
+        visited.<span class="fn">add</span>(u)
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> v <span class="kw">not</span> <span class="kw">in</span> visited:
+                <span class="fn">dfs</span>(v)
+        stack.<span class="fn">append</span>(u)  <span class="cmt"># post-order</span>
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> i <span class="kw">not</span> <span class="kw">in</span> visited:
+            <span class="fn">dfs</span>(i)
+
+    <span class="kw">return</span> stack[::-<span class="num">1</span>]  <span class="cmt"># reverse post-order</span></code></pre>
+
+<h3>Problems — Topological Sort</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Course Schedule</td><td><span class="badge medium">Medium</span></td><td>Cycle detection via topo</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule/">207</a></td></tr>
+    <tr><td>2</td><td>Course Schedule II</td><td><span class="badge medium">Medium</span></td><td>Return topo order</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule-ii/">210</a></td></tr>
+    <tr><td>3</td><td>Alien Dictionary</td><td><span class="badge hard">Hard</span></td><td>Build graph + topo sort</td><td>269</td></tr>
+    <tr><td>4</td><td>Minimum Height Trees</td><td><span class="badge medium">Medium</span></td><td>Topo-like leaf trimming</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-height-trees/">310</a></td></tr>
+    <tr><td>5</td><td>Parallel Courses</td><td><span class="badge medium">Medium</span></td><td>Topo + level tracking</td><td>1136</td></tr>
+    <tr><td>6</td><td>Sequence Reconstruction</td><td><span class="badge medium">Medium</span></td><td>Unique topo sort</td><td>444</td></tr>
+    <tr><td>7</td><td>Longest Increasing Path in Matrix</td><td><span class="badge hard">Hard</span></td><td>Topo sort on grid</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-path-in-a-matrix/">329</a></td></tr>
+    <tr><td>8</td><td>Sort Items by Groups</td><td><span class="badge hard">Hard</span></td><td>Double topo sort</td><td><a class="lc-link" href="https://leetcode.com/problems/sort-items-by-groups-respecting-dependencies/">1203</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 6 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s6"><span class="section-num">6.</span> Shortest Path Algorithms</h2>
+
+<h3>6a. Dijkstra's Algorithm</h3>
+<div class="note"><strong>When:</strong> Non-negative weights, single source. <strong>Complexity:</strong> O((V + E) log V) with min-heap.</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">dijkstra</span>(graph, start, n):
+    dist = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * n
+    dist[start] = <span class="num">0</span>
+    heap = [(<span class="num">0</span>, start)]  <span class="cmt"># (distance, node)</span>
+
+    <span class="kw">while</span> heap:
+        d, u = heapq.<span class="fn">heappop</span>(heap)
+        <span class="kw">if</span> d &gt; dist[u]:
+            <span class="kw">continue</span>  <span class="cmt"># skip outdated entries</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                heapq.<span class="fn">heappush</span>(heap, (dist[v], v))
+
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>6b. Bellman-Ford</h3>
+<div class="note"><strong>When:</strong> Negative weights allowed, single source. Detects negative cycles. <strong>Complexity:</strong> O(V × E)</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">bellman_ford</span>(n, edges, start):
+    dist = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * n
+    dist[start] = <span class="num">0</span>
+
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n - <span class="num">1</span>):
+        <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+            <span class="kw">if</span> dist[u] != <span class="bi">float</span>(<span class="str">'inf'</span>) <span class="kw">and</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+
+    <span class="cmt"># Negative cycle detection</span>
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        <span class="kw">if</span> dist[u] != <span class="bi">float</span>(<span class="str">'inf'</span>) <span class="kw">and</span> dist[u] + w &lt; dist[v]:
+            <span class="kw">return</span> <span class="bi">None</span>  <span class="cmt"># negative cycle exists</span>
+
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>6c. Floyd-Warshall</h3>
+<div class="note"><strong>When:</strong> All-pairs shortest path. Handles negative weights (no negative cycles). <strong>Complexity:</strong> O(V³)</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">floyd_warshall</span>(n, edges):
+    dist = [[<span class="bi">float</span>(<span class="str">'inf'</span>)] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        dist[i][i] = <span class="num">0</span>
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        dist[u][v] = w
+
+    <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+            <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(n):
+                <span class="kw">if</span> dist[i][k] + dist[k][j] &lt; dist[i][j]:
+                    dist[i][j] = dist[i][k] + dist[k][j]
+
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>6d. SPFA (Shortest Path Faster Algorithm)</h3>
+<div class="note"><strong>When:</strong> Bellman-Ford optimization with queue. Average O(E), worst O(VE).</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">spfa</span>(graph, start, n):
+    dist = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * n
+    dist[start] = <span class="num">0</span>
+    in_queue = [<span class="bi">False</span>] * n
+    queue = deque([start])
+    in_queue[start] = <span class="bi">True</span>
+
+    <span class="kw">while</span> queue:
+        u = queue.<span class="fn">popleft</span>()
+        in_queue[u] = <span class="bi">False</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                <span class="kw">if</span> <span class="kw">not</span> in_queue[v]:
+                    queue.<span class="fn">append</span>(v)
+                    in_queue[v] = <span class="bi">True</span>
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>6e. Shortest Path in DAG (Topo Sort + Relaxation)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">shortest_path_dag</span>(graph, n, start):
+    order = <span class="fn">topo_sort_kahn</span>(graph, n)
+    dist = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * n
+    dist[start] = <span class="num">0</span>
+    <span class="kw">for</span> u <span class="kw">in</span> order:
+        <span class="kw">if</span> dist[u] != <span class="bi">float</span>(<span class="str">'inf'</span>):
+            <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+                dist[v] = <span class="bi">min</span>(dist[v], dist[u] + w)
+    <span class="kw">return</span> dist</code></pre>
+
+<h3>Algorithm Comparison</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Algorithm</th><th>Weights</th><th>Negative</th><th>All-Pairs</th><th>Complexity</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">BFS</td><td>Unweighted</td><td>—</td><td>No</td><td>O(V+E)</td></tr>
+    <tr><td style="text-align:left">0-1 BFS</td><td>0 or 1</td><td>No</td><td>No</td><td>O(V+E)</td></tr>
+    <tr><td style="text-align:left">Dijkstra</td><td>Non-negative</td><td>No</td><td>No</td><td>O((V+E) log V)</td></tr>
+    <tr><td style="text-align:left">Bellman-Ford</td><td>Any</td><td>Yes (detects cycles)</td><td>No</td><td>O(VE)</td></tr>
+    <tr><td style="text-align:left">Floyd-Warshall</td><td>Any</td><td>Yes (no neg cycles)</td><td>Yes</td><td>O(V³)</td></tr>
+    <tr><td style="text-align:left">DAG relaxation</td><td>Any (DAG only)</td><td>Yes</td><td>No</td><td>O(V+E)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Problems — Shortest Path</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Algorithm</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Network Delay Time</td><td><span class="badge medium">Medium</span></td><td>Dijkstra</td><td><a class="lc-link" href="https://leetcode.com/problems/network-delay-time/">743</a></td></tr>
+    <tr><td>2</td><td>Cheapest Flights Within K Stops</td><td><span class="badge medium">Medium</span></td><td>Bellman / BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/cheapest-flights-within-k-stops/">787</a></td></tr>
+    <tr><td>3</td><td>Path With Minimum Effort</td><td><span class="badge medium">Medium</span></td><td>Dijkstra on grid</td><td><a class="lc-link" href="https://leetcode.com/problems/path-with-minimum-effort/">1631</a></td></tr>
+    <tr><td>4</td><td>Swim in Rising Water</td><td><span class="badge hard">Hard</span></td><td>Dijkstra / BS+BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/swim-in-rising-water/">778</a></td></tr>
+    <tr><td>5</td><td>Shortest Path in Binary Matrix</td><td><span class="badge medium">Medium</span></td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-in-binary-matrix/">1091</a></td></tr>
+    <tr><td>6</td><td>Find the City With Smallest Neighbors</td><td><span class="badge medium">Medium</span></td><td>Floyd-Warshall</td><td><a class="lc-link" href="https://leetcode.com/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/">1334</a></td></tr>
+    <tr><td>7</td><td>Path With Maximum Probability</td><td><span class="badge medium">Medium</span></td><td>Modified Dijkstra</td><td><a class="lc-link" href="https://leetcode.com/problems/path-with-maximum-probability/">1514</a></td></tr>
+    <tr><td>8</td><td>Shortest Path to Get All Keys</td><td><span class="badge hard">Hard</span></td><td>BFS + bitmask state</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-to-get-all-keys/">864</a></td></tr>
+    <tr><td>9</td><td>Shortest Path Visiting All Nodes</td><td><span class="badge hard">Hard</span></td><td>BFS + bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-visiting-all-nodes/">847</a></td></tr>
+    <tr><td>10</td><td>Min Cost to Make Valid Path</td><td><span class="badge hard">Hard</span></td><td>0-1 BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-to-make-at-least-one-valid-path-in-a-grid/">1368</a></td></tr>
+    <tr><td>11</td><td>Reachable Nodes in Subdivided Graph</td><td><span class="badge hard">Hard</span></td><td>Dijkstra</td><td><a class="lc-link" href="https://leetcode.com/problems/reachable-nodes-in-subdivided-graph/">882</a></td></tr>
+    <tr><td>12</td><td>Number of Restricted Paths</td><td><span class="badge medium">Medium</span></td><td>Dijkstra + DP</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-restricted-paths-from-first-to-last-node/">1786</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 7 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s7"><span class="section-num">7.</span> Minimum Spanning Tree</h2>
+
+<h3>7a. Kruskal's Algorithm (Edge-based, uses Union-Find)</h3>
+<div class="note"><strong>Complexity:</strong> O(E log E)</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">kruskal</span>(n, edges):
+    edges.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">2</span>])  <span class="cmt"># sort by weight</span>
+    parent = <span class="bi">list</span>(<span class="bi">range</span>(n))
+    rank = [<span class="num">0</span>] * n
+
+    <span class="kw">def</span> <span class="fn">find</span>(x):
+        <span class="kw">while</span> parent[x] != x:
+            parent[x] = parent[parent[x]]  <span class="cmt"># path compression</span>
+            x = parent[x]
+        <span class="kw">return</span> x
+
+    <span class="kw">def</span> <span class="fn">union</span>(a, b):
+        ra, rb = <span class="fn">find</span>(a), <span class="fn">find</span>(b)
+        <span class="kw">if</span> ra == rb:
+            <span class="kw">return</span> <span class="bi">False</span>
+        <span class="kw">if</span> rank[ra] &lt; rank[rb]:
+            ra, rb = rb, ra
+        parent[rb] = ra
+        <span class="kw">if</span> rank[ra] == rank[rb]:
+            rank[ra] += <span class="num">1</span>
+        <span class="kw">return</span> <span class="bi">True</span>
+
+    mst_cost = <span class="num">0</span>
+    mst_edges = <span class="num">0</span>
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        <span class="kw">if</span> <span class="fn">union</span>(u, v):
+            mst_cost += w
+            mst_edges += <span class="num">1</span>
+            <span class="kw">if</span> mst_edges == n - <span class="num">1</span>:
+                <span class="kw">break</span>
+    <span class="kw">return</span> mst_cost</code></pre>
+
+<h3>7b. Prim's Algorithm (Vertex-based, uses min-heap)</h3>
+<div class="note"><strong>Complexity:</strong> O((V + E) log V)</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">prim</span>(graph, n):
+    visited = [<span class="bi">False</span>] * n
+    heap = [(<span class="num">0</span>, <span class="num">0</span>)]  <span class="cmt"># (weight, node), start from node 0</span>
+    mst_cost = <span class="num">0</span>
+
+    <span class="kw">while</span> heap:
+        w, u = heapq.<span class="fn">heappop</span>(heap)
+        <span class="kw">if</span> visited[u]:
+            <span class="kw">continue</span>
+        visited[u] = <span class="bi">True</span>
+        mst_cost += w
+        <span class="kw">for</span> v, weight <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> <span class="kw">not</span> visited[v]:
+                heapq.<span class="fn">heappush</span>(heap, (weight, v))
+
+    <span class="kw">return</span> mst_cost</code></pre>
+
+<h3>When to Use</h3>
+<div class="algo-compare">
+  <div class="algo-card">
+    <h4>Kruskal's</h4>
+    <p>Best for sparse graphs and when the edge list is given.</p>
+  </div>
+  <div class="algo-card">
+    <h4>Prim's</h4>
+    <p>Best for dense graphs and when the adjacency list is given.</p>
+  </div>
+</div>
+
+<h3>Problems — MST</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Min Cost to Connect All Points</td><td><span class="badge medium">Medium</span></td><td>Kruskal/Prim</td><td><a class="lc-link" href="https://leetcode.com/problems/min-cost-to-connect-all-points/">1584</a></td></tr>
+    <tr><td>2</td><td>Connecting Cities With Min Cost</td><td><span class="badge medium">Medium</span></td><td>MST</td><td>1135</td></tr>
+    <tr><td>3</td><td>Find Critical and Pseudo-Critical Edges</td><td><span class="badge hard">Hard</span></td><td>MST enumeration</td><td><a class="lc-link" href="https://leetcode.com/problems/find-critical-and-pseudo-critical-edges-in-minimum-spanning-tree/">1489</a></td></tr>
+    <tr><td>4</td><td>Optimize Water Distribution</td><td><span class="badge hard">Hard</span></td><td>Virtual node + MST</td><td>1168</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 8 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s8"><span class="section-num">8.</span> Union-Find / Disjoint Set Union</h2>
+
+<h3>Template (Path Compression + Union by Rank)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">class</span> <span class="fn">UnionFind</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, n):
+        self.parent = <span class="bi">list</span>(<span class="bi">range</span>(n))
+        self.rank = [<span class="num">0</span>] * n
+        self.components = n
+
+    <span class="kw">def</span> <span class="fn">find</span>(self, x):
+        <span class="kw">while</span> self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]  <span class="cmt"># path halving</span>
+            x = self.parent[x]
+        <span class="kw">return</span> x
+
+    <span class="kw">def</span> <span class="fn">union</span>(self, a, b):
+        ra, rb = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)
+        <span class="kw">if</span> ra == rb:
+            <span class="kw">return</span> <span class="bi">False</span>
+        <span class="kw">if</span> self.rank[ra] &lt; self.rank[rb]:
+            ra, rb = rb, ra
+        self.parent[rb] = ra
+        <span class="kw">if</span> self.rank[ra] == self.rank[rb]:
+            self.rank[ra] += <span class="num">1</span>
+        self.components -= <span class="num">1</span>
+        <span class="kw">return</span> <span class="bi">True</span>
+
+    <span class="kw">def</span> <span class="fn">connected</span>(self, a, b):
+        <span class="kw">return</span> self.<span class="fn">find</span>(a) == self.<span class="fn">find</span>(b)</code></pre>
+
+<h3>Weighted Union-Find</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">class</span> <span class="fn">WeightedUF</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, n):
+        self.parent = <span class="bi">list</span>(<span class="bi">range</span>(n))
+        self.weight = [<span class="num">0.0</span>] * n  <span class="cmt"># weight[x] = ratio from x to parent[x]</span>
+
+    <span class="kw">def</span> <span class="fn">find</span>(self, x):
+        <span class="kw">if</span> self.parent[x] != x:
+            root = self.<span class="fn">find</span>(self.parent[x])
+            self.weight[x] *= self.weight[self.parent[x]]
+            self.parent[x] = root
+        <span class="kw">return</span> self.parent[x]
+
+    <span class="kw">def</span> <span class="fn">union</span>(self, a, b, ratio):  <span class="cmt"># a / b = ratio</span>
+        ra, rb = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)
+        <span class="kw">if</span> ra == rb:
+            <span class="kw">return</span>
+        self.parent[ra] = rb
+        self.weight[ra] = ratio * self.weight[b] / self.weight[a]</code></pre>
+
+<h3>Problems — Union-Find</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Number of Connected Components</td><td><span class="badge medium">Medium</span></td><td>Basic UF</td><td>323</td></tr>
+    <tr><td>2</td><td>Redundant Connection</td><td><span class="badge medium">Medium</span></td><td>Cycle detection</td><td><a class="lc-link" href="https://leetcode.com/problems/redundant-connection/">684</a></td></tr>
+    <tr><td>3</td><td>Graph Valid Tree</td><td><span class="badge medium">Medium</span></td><td>n-1 edges + connected</td><td>261</td></tr>
+    <tr><td>4</td><td>Accounts Merge</td><td><span class="badge medium">Medium</span></td><td>Group by UF</td><td><a class="lc-link" href="https://leetcode.com/problems/accounts-merge/">721</a></td></tr>
+    <tr><td>5</td><td>Longest Consecutive Sequence</td><td><span class="badge medium">Medium</span></td><td>UF / HashSet</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-consecutive-sequence/">128</a></td></tr>
+    <tr><td>6</td><td>Evaluate Division</td><td><span class="badge medium">Medium</span></td><td>Weighted UF</td><td><a class="lc-link" href="https://leetcode.com/problems/evaluate-division/">399</a></td></tr>
+    <tr><td>7</td><td>Satisfiability of Equality Equations</td><td><span class="badge medium">Medium</span></td><td>UF</td><td><a class="lc-link" href="https://leetcode.com/problems/satisfiability-of-equality-equations/">990</a></td></tr>
+    <tr><td>8</td><td>Number of Islands II</td><td><span class="badge hard">Hard</span></td><td>Dynamic UF</td><td>305</td></tr>
+    <tr><td>9</td><td>Smallest String With Swaps</td><td><span class="badge medium">Medium</span></td><td>UF + sorting</td><td><a class="lc-link" href="https://leetcode.com/problems/smallest-string-with-swaps/">1202</a></td></tr>
+    <tr><td>10</td><td>Most Stones Removed</td><td><span class="badge medium">Medium</span></td><td>UF on coordinates</td><td><a class="lc-link" href="https://leetcode.com/problems/most-stones-removed-with-same-row-or-column/">947</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 9 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s9"><span class="section-num">9.</span> Bipartite Graph</h2>
+
+<p><strong>Pattern:</strong> Can the graph be 2-colored? (No odd-length cycles)</p>
+
+<h3>BFS Coloring</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">is_bipartite</span>(graph, n):
+    color = [-<span class="num">1</span>] * n
+    <span class="kw">for</span> start <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> color[start] != -<span class="num">1</span>:
+            <span class="kw">continue</span>
+        queue = deque([start])
+        color[start] = <span class="num">0</span>
+        <span class="kw">while</span> queue:
+            u = queue.<span class="fn">popleft</span>()
+            <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+                <span class="kw">if</span> color[v] == -<span class="num">1</span>:
+                    color[v] = <span class="num">1</span> - color[u]
+                    queue.<span class="fn">append</span>(v)
+                <span class="kw">elif</span> color[v] == color[u]:
+                    <span class="kw">return</span> <span class="bi">False</span>
+    <span class="kw">return</span> <span class="bi">True</span></code></pre>
+
+<h3>Problems — Bipartite</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Is Graph Bipartite?</td><td><span class="badge medium">Medium</span></td><td>BFS/DFS coloring</td><td><a class="lc-link" href="https://leetcode.com/problems/is-graph-bipartite/">785</a></td></tr>
+    <tr><td>2</td><td>Possible Bipartition</td><td><span class="badge medium">Medium</span></td><td>Bipartite check</td><td><a class="lc-link" href="https://leetcode.com/problems/possible-bipartition/">886</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 10 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s10"><span class="section-num">10.</span> Strongly Connected Components</h2>
+
+<h3>Kosaraju's Algorithm</h3>
+<div class="note"><strong>Strategy:</strong> Find all SCCs in a directed graph. Two DFS passes.</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">kosaraju</span>(graph, reverse_graph, n):
+    <span class="cmt"># Pass 1: Get finish order</span>
+    visited = <span class="bi">set</span>()
+    order = []
+
+    <span class="kw">def</span> <span class="fn">dfs1</span>(u):
+        visited.<span class="fn">add</span>(u)
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> v <span class="kw">not</span> <span class="kw">in</span> visited:
+                <span class="fn">dfs1</span>(v)
+        order.<span class="fn">append</span>(u)
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> i <span class="kw">not</span> <span class="kw">in</span> visited:
+            <span class="fn">dfs1</span>(i)
+
+    <span class="cmt"># Pass 2: Process in reverse finish order on transposed graph</span>
+    visited.<span class="fn">clear</span>()
+    sccs = []
+
+    <span class="kw">def</span> <span class="fn">dfs2</span>(u, component):
+        visited.<span class="fn">add</span>(u)
+        component.<span class="fn">append</span>(u)
+        <span class="kw">for</span> v <span class="kw">in</span> reverse_graph[u]:
+            <span class="kw">if</span> v <span class="kw">not</span> <span class="kw">in</span> visited:
+                <span class="fn">dfs2</span>(v, component)
+
+    <span class="kw">for</span> u <span class="kw">in</span> <span class="bi">reversed</span>(order):
+        <span class="kw">if</span> u <span class="kw">not</span> <span class="kw">in</span> visited:
+            component = []
+            <span class="fn">dfs2</span>(u, component)
+            sccs.<span class="fn">append</span>(component)
+
+    <span class="kw">return</span> sccs</code></pre>
+
+<h3>Tarjan's Algorithm</h3>
+<div class="note"><strong>Strategy:</strong> Single DFS pass, uses low-link values.</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">tarjan_scc</span>(graph, n):
+    idx = [<span class="num">0</span>]
+    stack = []
+    on_stack = [<span class="bi">False</span>] * n
+    ids = [-<span class="num">1</span>] * n
+    low = [<span class="num">0</span>] * n
+    sccs = []
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(u):
+        ids[u] = low[u] = idx[<span class="num">0</span>]
+        idx[<span class="num">0</span>] += <span class="num">1</span>
+        stack.<span class="fn">append</span>(u)
+        on_stack[u] = <span class="bi">True</span>
+
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> ids[v] == -<span class="num">1</span>:
+                <span class="fn">dfs</span>(v)
+                low[u] = <span class="bi">min</span>(low[u], low[v])
+            <span class="kw">elif</span> on_stack[v]:
+                low[u] = <span class="bi">min</span>(low[u], ids[v])
+
+        <span class="cmt"># Root of SCC</span>
+        <span class="kw">if</span> low[u] == ids[u]:
+            component = []
+            <span class="kw">while</span> <span class="bi">True</span>:
+                v = stack.<span class="fn">pop</span>()
+                on_stack[v] = <span class="bi">False</span>
+                component.<span class="fn">append</span>(v)
+                <span class="kw">if</span> v == u:
+                    <span class="kw">break</span>
+            sccs.<span class="fn">append</span>(component)
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> ids[i] == -<span class="num">1</span>:
+            <span class="fn">dfs</span>(i)
+
+    <span class="kw">return</span> sccs</code></pre>
+
+<h3>Problems — SCC</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Critical Connections in a Network</td><td><span class="badge hard">Hard</span></td><td>Bridges (Tarjan variant)</td><td><a class="lc-link" href="https://leetcode.com/problems/critical-connections-in-a-network/">1192</a></td></tr>
+    <tr><td>2</td><td>Min Days to Disconnect Island</td><td><span class="badge hard">Hard</span></td><td>Articulation points</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-days-to-disconnect-island/">1568</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 11 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s11"><span class="section-num">11.</span> Bridges &amp; Articulation Points</h2>
+
+<h3>Bridges (Critical Edges)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">find_bridges</span>(graph, n):
+    timer = [<span class="num">0</span>]
+    tin = [-<span class="num">1</span>] * n
+    low = [-<span class="num">1</span>] * n
+    bridges = []
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(u, parent):
+        tin[u] = low[u] = timer[<span class="num">0</span>]
+        timer[<span class="num">0</span>] += <span class="num">1</span>
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> v == parent:
+                <span class="kw">continue</span>
+            <span class="kw">if</span> tin[v] == -<span class="num">1</span>:
+                <span class="fn">dfs</span>(v, u)
+                low[u] = <span class="bi">min</span>(low[u], low[v])
+                <span class="kw">if</span> low[v] &gt; tin[u]:
+                    bridges.<span class="fn">append</span>((u, v))
+            <span class="kw">else</span>:
+                low[u] = <span class="bi">min</span>(low[u], tin[v])
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> tin[i] == -<span class="num">1</span>:
+            <span class="fn">dfs</span>(i, -<span class="num">1</span>)
+
+    <span class="kw">return</span> bridges</code></pre>
+
+<h3>Articulation Points (Cut Vertices)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">find_articulation_points</span>(graph, n):
+    timer = [<span class="num">0</span>]
+    tin = [-<span class="num">1</span>] * n
+    low = [-<span class="num">1</span>] * n
+    ap = <span class="bi">set</span>()
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(u, parent):
+        tin[u] = low[u] = timer[<span class="num">0</span>]
+        timer[<span class="num">0</span>] += <span class="num">1</span>
+        children = <span class="num">0</span>
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            <span class="kw">if</span> v == parent:
+                <span class="kw">continue</span>
+            <span class="kw">if</span> tin[v] == -<span class="num">1</span>:
+                children += <span class="num">1</span>
+                <span class="fn">dfs</span>(v, u)
+                low[u] = <span class="bi">min</span>(low[u], low[v])
+                <span class="kw">if</span> parent != -<span class="num">1</span> <span class="kw">and</span> low[v] &gt;= tin[u]:
+                    ap.<span class="fn">add</span>(u)
+            <span class="kw">else</span>:
+                low[u] = <span class="bi">min</span>(low[u], tin[v])
+        <span class="kw">if</span> parent == -<span class="num">1</span> <span class="kw">and</span> children &gt; <span class="num">1</span>:
+            ap.<span class="fn">add</span>(u)
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        <span class="kw">if</span> tin[i] == -<span class="num">1</span>:
+            <span class="fn">dfs</span>(i, -<span class="num">1</span>)
+
+    <span class="kw">return</span> ap</code></pre>
+
+<h3>Problems — Bridges &amp; Articulation Points</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Critical Connections in a Network</td><td><span class="badge hard">Hard</span></td><td><a class="lc-link" href="https://leetcode.com/problems/critical-connections-in-a-network/">1192</a></td></tr>
+    <tr><td>2</td><td>Min Days to Disconnect Island</td><td><span class="badge hard">Hard</span></td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-days-to-disconnect-island/">1568</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 12 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s12"><span class="section-num">12.</span> Euler Path &amp; Circuit</h2>
+
+<h3>Key Conditions</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Type</th><th>Undirected</th><th>Directed</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Euler Circuit</td><td>All vertices even degree</td><td>indegree = outdegree for all</td></tr>
+    <tr><td style="text-align:left">Euler Path</td><td>Exactly 0 or 2 odd-degree vertices</td><td>At most 1 vertex with outdeg-indeg=1; at most 1 with indeg-outdeg=1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Hierholzer's Algorithm</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">euler_path</span>(graph, start):
+    <span class="cmt"># graph is dict of defaultdict(list) or adjacency with mutable edges</span>
+    stack = [start]
+    path = []
+    <span class="kw">while</span> stack:
+        u = stack[-<span class="num">1</span>]
+        <span class="kw">if</span> graph[u]:
+            v = graph[u].<span class="fn">pop</span>()
+            stack.<span class="fn">append</span>(v)
+        <span class="kw">else</span>:
+            path.<span class="fn">append</span>(stack.<span class="fn">pop</span>())
+    <span class="kw">return</span> path[::-<span class="num">1</span>]</code></pre>
+
+<h3>Problems — Euler</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Reconstruct Itinerary</td><td><span class="badge hard">Hard</span></td><td>Hierholzer's</td><td><a class="lc-link" href="https://leetcode.com/problems/reconstruct-itinerary/">332</a></td></tr>
+    <tr><td>2</td><td>Valid Arrangement of Pairs</td><td><span class="badge hard">Hard</span></td><td>Euler path</td><td><a class="lc-link" href="https://leetcode.com/problems/valid-arrangement-of-pairs/">2097</a></td></tr>
+    <tr><td>3</td><td>Cracking the Safe</td><td><span class="badge hard">Hard</span></td><td>De Bruijn / Euler</td><td><a class="lc-link" href="https://leetcode.com/problems/cracking-the-safe/">753</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 13 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s13"><span class="section-num">13.</span> Network Flow / Max Flow</h2>
+
+<h3>Ford-Fulkerson (Edmonds-Karp variant, BFS-based)</h3>
+<div class="note"><strong>Complexity:</strong> O(VE²)</div>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">max_flow_bfs</span>(graph, source, sink, n):
+    <span class="str">"""Edmonds-Karp: BFS-based Ford-Fulkerson. O(VE²)"""</span>
+    <span class="cmt"># graph is capacity matrix graph[u][v] = capacity</span>
+
+    <span class="kw">def</span> <span class="fn">bfs</span>(source, sink, parent):
+        visited = {source}
+        queue = deque([source])
+        <span class="kw">while</span> queue:
+            u = queue.<span class="fn">popleft</span>()
+            <span class="kw">for</span> v <span class="kw">in</span> <span class="bi">range</span>(n):
+                <span class="kw">if</span> v <span class="kw">not</span> <span class="kw">in</span> visited <span class="kw">and</span> graph[u][v] &gt; <span class="num">0</span>:
+                    visited.<span class="fn">add</span>(v)
+                    parent[v] = u
+                    <span class="kw">if</span> v == sink:
+                        <span class="kw">return</span> <span class="bi">True</span>
+                    queue.<span class="fn">append</span>(v)
+        <span class="kw">return</span> <span class="bi">False</span>
+
+    total_flow = <span class="num">0</span>
+    parent = [-<span class="num">1</span>] * n
+
+    <span class="kw">while</span> <span class="fn">bfs</span>(source, sink, parent):
+        <span class="cmt"># Find bottleneck</span>
+        path_flow = <span class="bi">float</span>(<span class="str">'inf'</span>)
+        v = sink
+        <span class="kw">while</span> v != source:
+            u = parent[v]
+            path_flow = <span class="bi">min</span>(path_flow, graph[u][v])
+            v = u
+
+        <span class="cmt"># Update residual graph</span>
+        v = sink
+        <span class="kw">while</span> v != source:
+            u = parent[v]
+            graph[u][v] -= path_flow
+            graph[v][u] += path_flow
+            v = u
+
+        total_flow += path_flow
+        parent = [-<span class="num">1</span>] * n
+
+    <span class="kw">return</span> total_flow</code></pre>
+
+<h3>When Max Flow Appears in Interviews</h3>
+<ul style="margin:12px 0 12px 24px; color:var(--text-muted); font-size:14px;">
+  <li><strong>Minimum Cut</strong> (Max-Flow Min-Cut Theorem)</li>
+  <li><strong>Bipartite Matching</strong> (maximum matching = max flow in bipartite network)</li>
+  <li><strong>Edge-disjoint paths</strong></li>
+</ul>
+
+<h3>Problems — Network Flow</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Maximum Accepted Invitations</td><td><span class="badge medium">Medium</span></td><td>Bipartite matching</td></tr>
+    <tr><td>2</td><td>Maximum Students Taking Exam</td><td><span class="badge hard">Hard</span></td><td>Max flow / Bitmask DP</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 14 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s14"><span class="section-num">14.</span> Graph Coloring</h2>
+
+<h3>M-Coloring (Backtracking)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">can_color</span>(graph, n, m):
+    color = [<span class="num">0</span>] * n
+
+    <span class="kw">def</span> <span class="fn">is_safe</span>(node, c):
+        <span class="kw">return</span> <span class="bi">all</span>(color[v] != c <span class="kw">for</span> v <span class="kw">in</span> graph[node])
+
+    <span class="kw">def</span> <span class="fn">solve</span>(node):
+        <span class="kw">if</span> node == n:
+            <span class="kw">return</span> <span class="bi">True</span>
+        <span class="kw">for</span> c <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+            <span class="kw">if</span> <span class="fn">is_safe</span>(node, c):
+                color[node] = c
+                <span class="kw">if</span> <span class="fn">solve</span>(node + <span class="num">1</span>):
+                    <span class="kw">return</span> <span class="bi">True</span>
+                color[node] = <span class="num">0</span>
+        <span class="kw">return</span> <span class="bi">False</span>
+
+    <span class="kw">return</span> <span class="fn">solve</span>(<span class="num">0</span>)</code></pre>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 15 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s15"><span class="section-num">15.</span> Advanced Patterns</h2>
+
+<h3>15a. BFS/DFS with State (Bitmask)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Shortest path visiting all nodes — BFS with (node, visited_bitmask) state</span>
+<span class="kw">def</span> <span class="fn">shortest_path_all_nodes</span>(graph, n):
+    full_mask = (<span class="num">1</span> &lt;&lt; n) - <span class="num">1</span>
+    queue = deque()
+    visited = <span class="bi">set</span>()
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        state = (i, <span class="num">1</span> &lt;&lt; i)
+        queue.<span class="fn">append</span>((i, <span class="num">1</span> &lt;&lt; i, <span class="num">0</span>))  <span class="cmt"># node, mask, dist</span>
+        visited.<span class="fn">add</span>(state)
+
+    <span class="kw">while</span> queue:
+        node, mask, dist = queue.<span class="fn">popleft</span>()
+        <span class="kw">if</span> mask == full_mask:
+            <span class="kw">return</span> dist
+        <span class="kw">for</span> nei <span class="kw">in</span> graph[node]:
+            new_mask = mask | (<span class="num">1</span> &lt;&lt; nei)
+            <span class="kw">if</span> (nei, new_mask) <span class="kw">not</span> <span class="kw">in</span> visited:
+                visited.<span class="fn">add</span>((nei, new_mask))
+                queue.<span class="fn">append</span>((nei, new_mask, dist + <span class="num">1</span>))
+    <span class="kw">return</span> -<span class="num">1</span></code></pre>
+
+<h3>15b. Multi-source BFS / Rotten Oranges Pattern</h3>
+<p>Used when you need to propagate from multiple starting points simultaneously.</p>
+
+<h3>15c. Bidirectional BFS</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">bidirectional_bfs</span>(graph, start, end):
+    <span class="kw">if</span> start == end:
+        <span class="kw">return</span> <span class="num">0</span>
+    front = {start}
+    back = {end}
+    visited = {start, end}
+    steps = <span class="num">0</span>
+
+    <span class="kw">while</span> front <span class="kw">and</span> back:
+        steps += <span class="num">1</span>
+        <span class="cmt"># Always expand the smaller frontier</span>
+        <span class="kw">if</span> <span class="bi">len</span>(front) &gt; <span class="bi">len</span>(back):
+            front, back = back, front
+        next_front = <span class="bi">set</span>()
+        <span class="kw">for</span> node <span class="kw">in</span> front:
+            <span class="kw">for</span> nei <span class="kw">in</span> graph[node]:
+                <span class="kw">if</span> nei <span class="kw">in</span> back:
+                    <span class="kw">return</span> steps
+                <span class="kw">if</span> nei <span class="kw">not</span> <span class="kw">in</span> visited:
+                    visited.<span class="fn">add</span>(nei)
+                    next_front.<span class="fn">add</span>(nei)
+        front = next_front
+
+    <span class="kw">return</span> -<span class="num">1</span>  <span class="cmt"># no path</span></code></pre>
+
+<h3>15d. Implicit Graphs (State-Space Search)</h3>
+<p>Problems where the graph isn't given explicitly — you construct it from states.</p>
+<p><strong>Key Idea:</strong> Each "state" is a node, valid transitions are edges.</p>
+<p>Examples: Sliding puzzle, Open the Lock, Word Ladder.</p>
+
+<h3>15e. Graph + DP on DAG</h3>
+<p>Topological sort + relaxation for longest/shortest path on DAGs.</p>
+
+<h3>15f. Centroid Decomposition (Trees)</h3>
+<p>Divide-and-conquer on trees. Used for path queries.</p>
+
+<h3>15g. LCA — Lowest Common Ancestor</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Binary Lifting: O(n log n) preprocess, O(log n) per query</span>
+<span class="kw">import</span> math
+
+<span class="kw">def</span> <span class="fn">preprocess_lca</span>(graph, root, n):
+    LOG = <span class="bi">int</span>(math.<span class="fn">log2</span>(n)) + <span class="num">1</span>
+    depth = [<span class="num">0</span>] * n
+    up = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(LOG)]
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(v, p, d):
+        depth[v] = d
+        up[<span class="num">0</span>][v] = p
+        <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, LOG):
+            up[k][v] = up[k-<span class="num">1</span>][up[k-<span class="num">1</span>][v]]
+        <span class="kw">for</span> u <span class="kw">in</span> graph[v]:
+            <span class="kw">if</span> u != p:
+                <span class="fn">dfs</span>(u, v, d + <span class="num">1</span>)
+
+    <span class="fn">dfs</span>(root, root, <span class="num">0</span>)
+
+    <span class="kw">def</span> <span class="fn">lca</span>(a, b):
+        <span class="kw">if</span> depth[a] &lt; depth[b]:
+            a, b = b, a
+        diff = depth[a] - depth[b]
+        <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(LOG):
+            <span class="kw">if</span> (diff &gt;&gt; k) &amp; <span class="num">1</span>:
+                a = up[k][a]
+        <span class="kw">if</span> a == b:
+            <span class="kw">return</span> a
+        <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(LOG - <span class="num">1</span>, -<span class="num">1</span>, -<span class="num">1</span>):
+            <span class="kw">if</span> up[k][a] != up[k][b]:
+                a = up[k][a]
+                b = up[k][b]
+        <span class="kw">return</span> up[<span class="num">0</span>][a]
+
+    <span class="kw">return</span> lca</code></pre>
+
+<h3>Problems — Advanced Patterns</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Shortest Path Visiting All Nodes</td><td><span class="badge hard">Hard</span></td><td>BFS + Bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-visiting-all-nodes/">847</a></td></tr>
+    <tr><td>2</td><td>Shortest Path to Get All Keys</td><td><span class="badge hard">Hard</span></td><td>BFS + Bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-to-get-all-keys/">864</a></td></tr>
+    <tr><td>3</td><td>Word Ladder II</td><td><span class="badge hard">Hard</span></td><td>BFS + Backtrack</td><td><a class="lc-link" href="https://leetcode.com/problems/word-ladder-ii/">126</a></td></tr>
+    <tr><td>4</td><td>Sliding Puzzle</td><td><span class="badge hard">Hard</span></td><td>BFS on state</td><td><a class="lc-link" href="https://leetcode.com/problems/sliding-puzzle/">773</a></td></tr>
+    <tr><td>5</td><td>Cut Off Trees for Golf Event</td><td><span class="badge hard">Hard</span></td><td>Multi BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/cut-off-trees-for-golf-event/">675</a></td></tr>
+    <tr><td>6</td><td>Frog Position After T Seconds</td><td><span class="badge hard">Hard</span></td><td>DFS + probability</td><td><a class="lc-link" href="https://leetcode.com/problems/frog-position-after-t-seconds/">1377</a></td></tr>
+    <tr><td>7</td><td>Minimum Moves to Move a Box</td><td><span class="badge hard">Hard</span></td><td>BFS + BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-moves-to-move-a-box-to-their-target-location/">1263</a></td></tr>
+    <tr><td>8</td><td>Cat and Mouse</td><td><span class="badge hard">Hard</span></td><td>Game theory BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/cat-and-mouse/">913</a></td></tr>
+    <tr><td>9</td><td>Escape a Large Maze</td><td><span class="badge hard">Hard</span></td><td>Limited BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/escape-a-large-maze/">1036</a></td></tr>
+    <tr><td>10</td><td>Nearest Exit from Entrance in Maze</td><td><span class="badge medium">Medium</span></td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/nearest-exit-from-entrance-in-maze/">1926</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 16 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s16"><span class="section-num">16.</span> Master Problem List</h2>
+
+<h3>Easy (Start Here)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Flood Fill</td><td>Grid DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/flood-fill/">733</a></td></tr>
+    <tr><td>2</td><td>Find if Path Exists in Graph</td><td>BFS/DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/find-if-path-exists-in-graph/">1971</a></td></tr>
+    <tr><td>3</td><td>Find Center of Star Graph</td><td>Degree</td><td><a class="lc-link" href="https://leetcode.com/problems/find-center-of-star-graph/">1791</a></td></tr>
+    <tr><td>4</td><td>Find the Town Judge</td><td>In/Out degree</td><td><a class="lc-link" href="https://leetcode.com/problems/find-the-town-judge/">997</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Medium (Core Practice — Do ALL of These)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Number of Islands</td><td>Grid DFS/BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-islands/">200</a></td></tr>
+    <tr><td>2</td><td>Clone Graph</td><td>DFS + HashMap</td><td><a class="lc-link" href="https://leetcode.com/problems/clone-graph/">133</a></td></tr>
+    <tr><td>3</td><td>Course Schedule</td><td>Topo Sort / Cycle</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule/">207</a></td></tr>
+    <tr><td>4</td><td>Course Schedule II</td><td>Topo Sort</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule-ii/">210</a></td></tr>
+    <tr><td>5</td><td>Pacific Atlantic Water Flow</td><td>Multi-source DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/pacific-atlantic-water-flow/">417</a></td></tr>
+    <tr><td>6</td><td>Number of Provinces</td><td>Connected Components</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-provinces/">547</a></td></tr>
+    <tr><td>7</td><td>Rotting Oranges</td><td>Multi-source BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/rotting-oranges/">994</a></td></tr>
+    <tr><td>8</td><td>01 Matrix</td><td>Multi-source BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/01-matrix/">542</a></td></tr>
+    <tr><td>9</td><td>Surrounded Regions</td><td>Border DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/surrounded-regions/">130</a></td></tr>
+    <tr><td>10</td><td>Max Area of Island</td><td>Grid DFS</td><td><a class="lc-link" href="https://leetcode.com/problems/max-area-of-island/">695</a></td></tr>
+    <tr><td>11</td><td>Network Delay Time</td><td>Dijkstra</td><td><a class="lc-link" href="https://leetcode.com/problems/network-delay-time/">743</a></td></tr>
+    <tr><td>12</td><td>Is Graph Bipartite?</td><td>2-coloring BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/is-graph-bipartite/">785</a></td></tr>
+    <tr><td>13</td><td>Redundant Connection</td><td>Union-Find Cycle</td><td><a class="lc-link" href="https://leetcode.com/problems/redundant-connection/">684</a></td></tr>
+    <tr><td>14</td><td>Accounts Merge</td><td>Union-Find</td><td><a class="lc-link" href="https://leetcode.com/problems/accounts-merge/">721</a></td></tr>
+    <tr><td>15</td><td>Cheapest Flights Within K Stops</td><td>Modified BFS/BF</td><td><a class="lc-link" href="https://leetcode.com/problems/cheapest-flights-within-k-stops/">787</a></td></tr>
+    <tr><td>16</td><td>All Paths From Source to Target</td><td>DFS on DAG</td><td><a class="lc-link" href="https://leetcode.com/problems/all-paths-from-source-to-target/">797</a></td></tr>
+    <tr><td>17</td><td>Possible Bipartition</td><td>Bipartite</td><td><a class="lc-link" href="https://leetcode.com/problems/possible-bipartition/">886</a></td></tr>
+    <tr><td>18</td><td>Shortest Path in Binary Matrix</td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-in-binary-matrix/">1091</a></td></tr>
+    <tr><td>19</td><td>Path With Minimum Effort</td><td>Dijkstra on grid</td><td><a class="lc-link" href="https://leetcode.com/problems/path-with-minimum-effort/">1631</a></td></tr>
+    <tr><td>20</td><td>Min Cost to Connect All Points</td><td>MST</td><td><a class="lc-link" href="https://leetcode.com/problems/min-cost-to-connect-all-points/">1584</a></td></tr>
+    <tr><td>21</td><td>Evaluate Division</td><td>Weighted UF / BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/evaluate-division/">399</a></td></tr>
+    <tr><td>22</td><td>Minimum Height Trees</td><td>Topo leaf trimming</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-height-trees/">310</a></td></tr>
+    <tr><td>23</td><td>Snakes and Ladders</td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/snakes-and-ladders/">909</a></td></tr>
+    <tr><td>24</td><td>Open the Lock</td><td>BFS state-space</td><td><a class="lc-link" href="https://leetcode.com/problems/open-the-lock/">752</a></td></tr>
+    <tr><td>25</td><td>Shortest Bridge</td><td>DFS + BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-bridge/">934</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Hard (Target 10–15 of These)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Word Ladder</td><td>BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/word-ladder/">127</a></td></tr>
+    <tr><td>2</td><td>Word Ladder II</td><td>BFS + Backtrack</td><td><a class="lc-link" href="https://leetcode.com/problems/word-ladder-ii/">126</a></td></tr>
+    <tr><td>3</td><td>Alien Dictionary</td><td>Topo Sort</td><td>269</td></tr>
+    <tr><td>4</td><td>Reconstruct Itinerary</td><td>Euler Path</td><td><a class="lc-link" href="https://leetcode.com/problems/reconstruct-itinerary/">332</a></td></tr>
+    <tr><td>5</td><td>Critical Connections in a Network</td><td>Bridges (Tarjan)</td><td><a class="lc-link" href="https://leetcode.com/problems/critical-connections-in-a-network/">1192</a></td></tr>
+    <tr><td>6</td><td>Swim in Rising Water</td><td>Dijkstra / BS+BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/swim-in-rising-water/">778</a></td></tr>
+    <tr><td>7</td><td>Shortest Path Visiting All Nodes</td><td>BFS + Bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-visiting-all-nodes/">847</a></td></tr>
+    <tr><td>8</td><td>Shortest Path to Get All Keys</td><td>BFS + Bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-to-get-all-keys/">864</a></td></tr>
+    <tr><td>9</td><td>Bus Routes</td><td>BFS on routes</td><td><a class="lc-link" href="https://leetcode.com/problems/bus-routes/">815</a></td></tr>
+    <tr><td>10</td><td>Longest Increasing Path in Matrix</td><td>Topo + DFS/DP</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-path-in-a-matrix/">329</a></td></tr>
+    <tr><td>11</td><td>Find Critical and Pseudo-Critical Edges</td><td>MST analysis</td><td><a class="lc-link" href="https://leetcode.com/problems/find-critical-and-pseudo-critical-edges-in-minimum-spanning-tree/">1489</a></td></tr>
+    <tr><td>12</td><td>Sliding Puzzle</td><td>State BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/sliding-puzzle/">773</a></td></tr>
+    <tr><td>13</td><td>Min Cost to Make Valid Path</td><td>0-1 BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-to-make-at-least-one-valid-path-in-a-grid/">1368</a></td></tr>
+    <tr><td>14</td><td>Cat and Mouse</td><td>Game-theory BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/cat-and-mouse/">913</a></td></tr>
+    <tr><td>15</td><td>Number of Islands II</td><td>Dynamic UF</td><td>305</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Quick Reference -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="quick-ref"><span class="section-num">★</span> Quick Reference: Which Algorithm?</h2>
+
+<div class="decision-tree"><span class="q">"Find shortest path"</span>
+<span class="branch">  ├── Unweighted?           →</span> <span class="answer">BFS</span>
+<span class="branch">  ├── Weights 0/1?          →</span> <span class="answer">0-1 BFS</span>
+<span class="branch">  ├── Non-negative weights? →</span> <span class="answer">Dijkstra</span>
+<span class="branch">  ├── Negative weights?     →</span> <span class="answer">Bellman-Ford</span>
+<span class="branch">  ├── All pairs?            →</span> <span class="answer">Floyd-Warshall</span>
+<span class="branch">  └── DAG?                  →</span> <span class="answer">Topo Sort + Relaxation</span>
+
+<span class="q">"Find connected components"</span>
+<span class="branch">  ├── Static graph?         →</span> <span class="answer">BFS/DFS or Union-Find</span>
+<span class="branch">  └── Dynamic (edges added)?→</span> <span class="answer">Union-Find</span>
+
+<span class="q">"Detect cycle"</span>
+<span class="branch">  ├── Undirected?           →</span> <span class="answer">DFS (parent tracking) or Union-Find</span>
+<span class="branch">  └── Directed?             →</span> <span class="answer">DFS (3-color) or Kahn's</span>
+
+<span class="q">"Find MST"</span>
+<span class="branch">  ├── Sparse graph?         →</span> <span class="answer">Kruskal's</span>
+<span class="branch">  └── Dense graph?          →</span> <span class="answer">Prim's</span>
+
+<span class="q">"Ordering with dependencies"</span>
+<span class="branch">  └──</span> <span class="answer">Topological Sort (Kahn's BFS or DFS)</span>
+
+<span class="q">"Can graph be 2-colored?"</span>
+<span class="branch">  └──</span> <span class="answer">Bipartite check (BFS/DFS coloring)</span>
+
+<span class="q">"Find bridges/cut vertices"</span>
+<span class="branch">  └──</span> <span class="answer">Tarjan's (low-link DFS)</span>
+
+<span class="q">"State-space search"</span>
+<span class="branch">  └──</span> <span class="answer">BFS with (state) as node, possibly with bitmask</span></div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+  <em>Total: 85+ curated problems covering every graph pattern you'll encounter in MAANG interviews.</em>
+</div>
+
+</main>
+</div>
+</body>
+</html>

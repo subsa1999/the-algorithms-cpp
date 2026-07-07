@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greedy Algorithms — Basic to Advanced</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="layout-dsa accent-blue">
+<div class="wrapper">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="back-nav"><a href="index.html">← Back to Paperwork</a></div>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Core Concepts &amp; Proof Techniques</a></li>
+    <li><a href="#s2">Sorting + Greedy</a></li>
+    <li><a href="#s3">Interval Scheduling</a></li>
+    <li><a href="#s4">Two Pointers / Scanning</a></li>
+    <li><a href="#s5">Heap-Based Greedy</a></li>
+    <li><a href="#s6">Greedy on Arrays</a></li>
+    <li><a href="#s7">Greedy on Strings</a></li>
+    <li><a href="#s8">Greedy on Graphs</a></li>
+    <li><a href="#s9">Huffman &amp; Optimal Merge</a></li>
+    <li><a href="#s10">Exchange Argument</a></li>
+    <li><a href="#s11">Matroid &amp; Greedy Theory</a></li>
+    <li><a href="#s12">Fractional &amp; Relaxation</a></li>
+    <li><a href="#s13">Monotonic Stack / Deque</a></li>
+    <li><a href="#s14">Greedy + Binary Search</a></li>
+    <li><a href="#s15">Greedy vs DP — When Greedy Fails</a></li>
+    <li><a href="#s16">Master Problem List</a></li>
+  </ol>
+</nav>
+
+<!-- ── Main ── -->
+<main class="content">
+
+<header class="hero">
+  <h1>Greedy Algorithms — Basic to Advanced</h1>
+  <p class="subtitle">Complete reference with proof strategies, patterns, templates, and curated problems.</p>
+</header>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 1 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s1"><span class="section-num">1.</span> Core Concepts &amp; Proof Techniques</h2>
+
+<h3>What is Greedy?</h3>
+<p>A greedy algorithm makes the <strong>locally optimal choice</strong> at each step, hoping that these local choices lead to a <strong>globally optimal solution</strong>. Unlike DP, greedy never reconsiders past decisions.</p>
+
+<h3>When Does Greedy Work?</h3>
+<div class="note">
+  <strong>Two conditions must hold:</strong>
+  <ol style="margin-top:8px;">
+    <li><strong>Greedy choice property</strong> — A globally optimal solution can always include the greedy (locally optimal) choice.</li>
+    <li><strong>Optimal substructure</strong> — After making the greedy choice, the remaining subproblem has the same structure.</li>
+  </ol>
+</div>
+
+<h3>Proof Techniques for Greedy Correctness</h3>
+<div class="triple-grid">
+  <div class="algo-card">
+    <h4>Exchange Argument</h4>
+    <p>Show that swapping any non-greedy choice with the greedy choice doesn't worsen the solution. Most common proof technique.</p>
+  </div>
+  <div class="algo-card">
+    <h4>Greedy Stays Ahead</h4>
+    <p>Show by induction that after each step, greedy's partial solution is at least as good as any other algorithm's.</p>
+  </div>
+  <div class="algo-card">
+    <h4>Structural / Contradiction</h4>
+    <p>Assume greedy isn't optimal, then derive a contradiction with the problem's constraints.</p>
+  </div>
+</div>
+
+<h3>Greedy Thinking Template</h3>
+<div class="note tip">
+  <strong>4-Step Greedy Recipe:</strong>
+  <ol style="margin-top:8px;">
+    <li><strong>Sort / Order</strong> — What ordering of the input reveals the optimal greedy choice?</li>
+    <li><strong>Choose</strong> — At each step, pick the "best" remaining element.</li>
+    <li><strong>Validate</strong> — Check if the choice is feasible (doesn't violate constraints).</li>
+    <li><strong>Prove</strong> — Use exchange argument or "stays ahead" to convince yourself it's correct.</li>
+  </ol>
+</div>
+
+<h3>Greedy vs DP vs Brute Force</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Approach</th><th>Time</th><th>Explores</th><th>Revisits?</th><th>When</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Brute Force</td><td>Exponential</td><td>All choices</td><td>N/A</td><td>Always correct, never fast</td></tr>
+    <tr><td style="text-align:left">DP</td><td>Polynomial</td><td>All subproblems</td><td>No (memoized)</td><td>Overlapping subproblems</td></tr>
+    <tr><td style="text-align:left">Greedy</td><td>O(n) – O(n log n)</td><td>One choice/step</td><td>Never</td><td>Greedy choice + optimal substructure</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 2 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s2"><span class="section-num">2.</span> Sorting + Greedy</h2>
+
+<h3>Pattern: Sort by some criterion, then scan linearly making greedy choices</h3>
+
+<h3>Assign Cookies</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Sort children by greed, cookies by size. Match smallest first.</span>
+<span class="kw">def</span> <span class="fn">find_content_children</span>(children, cookies):
+    children.<span class="fn">sort</span>()
+    cookies.<span class="fn">sort</span>()
+    i = j = <span class="num">0</span>
+    <span class="kw">while</span> i &lt; <span class="bi">len</span>(children) <span class="kw">and</span> j &lt; <span class="bi">len</span>(cookies):
+        <span class="kw">if</span> cookies[j] &gt;= children[i]:
+            i += <span class="num">1</span>  <span class="cmt"># child satisfied</span>
+        j += <span class="num">1</span>
+    <span class="kw">return</span> i</code></pre>
+
+<h3>Minimum Number of Arrows to Burst Balloons</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Sort by end position. Shoot at the end of current balloon.</span>
+<span class="kw">def</span> <span class="fn">find_min_arrows</span>(points):
+    points.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">1</span>])
+    arrows = <span class="num">1</span>
+    end = points[<span class="num">0</span>][<span class="num">1</span>]
+    <span class="kw">for</span> s, e <span class="kw">in</span> points[<span class="num">1</span>:]:
+        <span class="kw">if</span> s &gt; end:  <span class="cmt"># new arrow needed</span>
+            arrows += <span class="num">1</span>
+            end = e
+    <span class="kw">return</span> arrows</code></pre>
+
+<h3>Boats to Save People</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Sort people. Pair heaviest with lightest if possible.</span>
+<span class="kw">def</span> <span class="fn">num_rescue_boats</span>(people, limit):
+    people.<span class="fn">sort</span>()
+    lo, hi = <span class="num">0</span>, <span class="bi">len</span>(people) - <span class="num">1</span>
+    boats = <span class="num">0</span>
+    <span class="kw">while</span> lo &lt;= hi:
+        <span class="kw">if</span> people[lo] + people[hi] &lt;= limit:
+            lo += <span class="num">1</span>
+        hi -= <span class="num">1</span>
+        boats += <span class="num">1</span>
+    <span class="kw">return</span> boats</code></pre>
+
+<h3>Problems — Sorting + Greedy</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Sort By</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Assign Cookies</td><td><span class="badge easy">Easy</span></td><td>Greed &amp; size</td><td><a class="lc-link" href="https://leetcode.com/problems/assign-cookies/">455</a></td></tr>
+    <tr><td>2</td><td>Min Arrows to Burst Balloons</td><td><span class="badge medium">Medium</span></td><td>End point</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons/">452</a></td></tr>
+    <tr><td>3</td><td>Boats to Save People</td><td><span class="badge medium">Medium</span></td><td>Weight</td><td><a class="lc-link" href="https://leetcode.com/problems/boats-to-save-people/">881</a></td></tr>
+    <tr><td>4</td><td>Queue Reconstruction by Height</td><td><span class="badge medium">Medium</span></td><td>Height desc, k asc</td><td><a class="lc-link" href="https://leetcode.com/problems/queue-reconstruction-by-height/">406</a></td></tr>
+    <tr><td>5</td><td>Largest Number</td><td><span class="badge medium">Medium</span></td><td>Custom comparator</td><td><a class="lc-link" href="https://leetcode.com/problems/largest-number/">179</a></td></tr>
+    <tr><td>6</td><td>Minimum Number of Platforms</td><td><span class="badge medium">Medium</span></td><td>Events sweep</td><td>—</td></tr>
+    <tr><td>7</td><td>Reduce Array Size to Half</td><td><span class="badge medium">Medium</span></td><td>Frequency desc</td><td><a class="lc-link" href="https://leetcode.com/problems/reduce-array-size-to-the-half/">1338</a></td></tr>
+    <tr><td>8</td><td>Bag of Tokens</td><td><span class="badge medium">Medium</span></td><td>Value</td><td><a class="lc-link" href="https://leetcode.com/problems/bag-of-tokens/">948</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 3 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s3"><span class="section-num">3.</span> Interval Scheduling</h2>
+
+<h3>Pattern: Sort intervals, greedily pick non-overlapping ones</h3>
+
+<h3>Maximum Non-Overlapping Intervals</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Classic: sort by end time, always pick earliest-ending interval</span>
+<span class="kw">def</span> <span class="fn">max_non_overlapping</span>(intervals):
+    intervals.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">1</span>])
+    count = <span class="num">0</span>
+    end = -<span class="bi">float</span>(<span class="str">'inf'</span>)
+    <span class="kw">for</span> s, e <span class="kw">in</span> intervals:
+        <span class="kw">if</span> s &gt;= end:
+            count += <span class="num">1</span>
+            end = e
+    <span class="kw">return</span> count</code></pre>
+
+<h3>Minimum Removals to Make Non-Overlapping</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Erase minimum intervals → keep maximum non-overlapping</span>
+<span class="kw">def</span> <span class="fn">erase_overlap_intervals</span>(intervals):
+    intervals.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">1</span>])
+    count = <span class="num">0</span>
+    end = -<span class="bi">float</span>(<span class="str">'inf'</span>)
+    <span class="kw">for</span> s, e <span class="kw">in</span> intervals:
+        <span class="kw">if</span> s &lt; end:
+            count += <span class="num">1</span>  <span class="cmt"># overlap → remove this one</span>
+        <span class="kw">else</span>:
+            end = e
+    <span class="kw">return</span> count</code></pre>
+
+<h3>Merge Intervals</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">merge</span>(intervals):
+    intervals.<span class="fn">sort</span>()
+    merged = [intervals[<span class="num">0</span>]]
+    <span class="kw">for</span> s, e <span class="kw">in</span> intervals[<span class="num">1</span>:]:
+        <span class="kw">if</span> s &lt;= merged[-<span class="num">1</span>][<span class="num">1</span>]:
+            merged[-<span class="num">1</span>][<span class="num">1</span>] = <span class="bi">max</span>(merged[-<span class="num">1</span>][<span class="num">1</span>], e)
+        <span class="kw">else</span>:
+            merged.<span class="fn">append</span>([s, e])
+    <span class="kw">return</span> merged</code></pre>
+
+<h3>Meeting Rooms II (Min rooms needed)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">min_meeting_rooms</span>(intervals):
+    intervals.<span class="fn">sort</span>()
+    heap = []  <span class="cmt"># tracks end times of ongoing meetings</span>
+    <span class="kw">for</span> s, e <span class="kw">in</span> intervals:
+        <span class="kw">if</span> heap <span class="kw">and</span> heap[<span class="num">0</span>] &lt;= s:
+            heapq.<span class="fn">heapreplace</span>(heap, e)
+        <span class="kw">else</span>:
+            heapq.<span class="fn">heappush</span>(heap, e)
+    <span class="kw">return</span> <span class="bi">len</span>(heap)</code></pre>
+
+<h3>Interval Scheduling Taxonomy</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Problem Type</th><th>Sort By</th><th>Strategy</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Max non-overlapping</td><td>End time ↑</td><td>Pick earliest end</td></tr>
+    <tr><td style="text-align:left">Min removals</td><td>End time ↑</td><td>Count overlaps</td></tr>
+    <tr><td style="text-align:left">Merge intervals</td><td>Start time ↑</td><td>Extend or create</td></tr>
+    <tr><td style="text-align:left">Min resources (rooms)</td><td>Start time ↑</td><td>Heap of end times</td></tr>
+    <tr><td style="text-align:left">Insert interval</td><td>Already sorted</td><td>Find overlap window</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Problems — Interval Scheduling</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Non-overlapping Intervals</td><td><span class="badge medium">Medium</span></td><td>Min removals</td><td><a class="lc-link" href="https://leetcode.com/problems/non-overlapping-intervals/">435</a></td></tr>
+    <tr><td>2</td><td>Merge Intervals</td><td><span class="badge medium">Medium</span></td><td>Merge</td><td><a class="lc-link" href="https://leetcode.com/problems/merge-intervals/">56</a></td></tr>
+    <tr><td>3</td><td>Insert Interval</td><td><span class="badge medium">Medium</span></td><td>Insert + merge</td><td><a class="lc-link" href="https://leetcode.com/problems/insert-interval/">57</a></td></tr>
+    <tr><td>4</td><td>Meeting Rooms</td><td><span class="badge easy">Easy</span></td><td>Overlap check</td><td>252</td></tr>
+    <tr><td>5</td><td>Meeting Rooms II</td><td><span class="badge medium">Medium</span></td><td>Min rooms (heap)</td><td>253</td></tr>
+    <tr><td>6</td><td>Min Arrows to Burst Balloons</td><td><span class="badge medium">Medium</span></td><td>Sweep line</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons/">452</a></td></tr>
+    <tr><td>7</td><td>Interval List Intersections</td><td><span class="badge medium">Medium</span></td><td>Two pointer merge</td><td><a class="lc-link" href="https://leetcode.com/problems/interval-list-intersections/">986</a></td></tr>
+    <tr><td>8</td><td>Video Stitching</td><td><span class="badge medium">Medium</span></td><td>Jump game on intervals</td><td><a class="lc-link" href="https://leetcode.com/problems/video-stitching/">1024</a></td></tr>
+    <tr><td>9</td><td>Remove Covered Intervals</td><td><span class="badge medium">Medium</span></td><td>Sort + filter</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-covered-intervals/">1288</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 4 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s4"><span class="section-num">4.</span> Two Pointers / Scanning Greedy</h2>
+
+<h3>Pattern: Maintain pointers or a running state, make greedy decisions in a single pass</h3>
+
+<h3>Jump Game</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Track farthest reachable position</span>
+<span class="kw">def</span> <span class="fn">can_jump</span>(nums):
+    farthest = <span class="num">0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(nums)):
+        <span class="kw">if</span> i &gt; farthest:
+            <span class="kw">return</span> <span class="bi">False</span>
+        farthest = <span class="bi">max</span>(farthest, i + nums[i])
+    <span class="kw">return</span> <span class="bi">True</span></code></pre>
+
+<h3>Jump Game II (Min jumps)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># BFS-style: track current window end and farthest reachable</span>
+<span class="kw">def</span> <span class="fn">jump</span>(nums):
+    jumps = cur_end = farthest = <span class="num">0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(nums) - <span class="num">1</span>):
+        farthest = <span class="bi">max</span>(farthest, i + nums[i])
+        <span class="kw">if</span> i == cur_end:
+            jumps += <span class="num">1</span>
+            cur_end = farthest
+    <span class="kw">return</span> jumps</code></pre>
+
+<h3>Container With Most Water</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Two pointers from both ends. Move the shorter side inward.</span>
+<span class="kw">def</span> <span class="fn">max_area</span>(height):
+    lo, hi = <span class="num">0</span>, <span class="bi">len</span>(height) - <span class="num">1</span>
+    result = <span class="num">0</span>
+    <span class="kw">while</span> lo &lt; hi:
+        area = <span class="bi">min</span>(height[lo], height[hi]) * (hi - lo)
+        result = <span class="bi">max</span>(result, area)
+        <span class="kw">if</span> height[lo] &lt; height[hi]:
+            lo += <span class="num">1</span>
+        <span class="kw">else</span>:
+            hi -= <span class="num">1</span>
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Trapping Rain Water</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Two pointers: track left_max and right_max</span>
+<span class="kw">def</span> <span class="fn">trap</span>(height):
+    lo, hi = <span class="num">0</span>, <span class="bi">len</span>(height) - <span class="num">1</span>
+    left_max = right_max = water = <span class="num">0</span>
+    <span class="kw">while</span> lo &lt; hi:
+        <span class="kw">if</span> height[lo] &lt; height[hi]:
+            left_max = <span class="bi">max</span>(left_max, height[lo])
+            water += left_max - height[lo]
+            lo += <span class="num">1</span>
+        <span class="kw">else</span>:
+            right_max = <span class="bi">max</span>(right_max, height[hi])
+            water += right_max - height[hi]
+            hi -= <span class="num">1</span>
+    <span class="kw">return</span> water</code></pre>
+
+<h3>Gas Station</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># If total gas >= total cost, answer exists. Track min surplus point.</span>
+<span class="kw">def</span> <span class="fn">can_complete_circuit</span>(gas, cost):
+    <span class="kw">if</span> <span class="bi">sum</span>(gas) &lt; <span class="bi">sum</span>(cost):
+        <span class="kw">return</span> -<span class="num">1</span>
+    start = tank = <span class="num">0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(gas)):
+        tank += gas[i] - cost[i]
+        <span class="kw">if</span> tank &lt; <span class="num">0</span>:
+            start = i + <span class="num">1</span>
+            tank = <span class="num">0</span>
+    <span class="kw">return</span> start</code></pre>
+
+<h3>Problems — Two Pointers / Scanning</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Jump Game</td><td><span class="badge medium">Medium</span></td><td>Farthest reach</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game/">55</a></td></tr>
+    <tr><td>2</td><td>Jump Game II</td><td><span class="badge medium">Medium</span></td><td>Window BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game-ii/">45</a></td></tr>
+    <tr><td>3</td><td>Container With Most Water</td><td><span class="badge medium">Medium</span></td><td>Two pointers</td><td><a class="lc-link" href="https://leetcode.com/problems/container-with-most-water/">11</a></td></tr>
+    <tr><td>4</td><td>Trapping Rain Water</td><td><span class="badge hard">Hard</span></td><td>Two pointers / stack</td><td><a class="lc-link" href="https://leetcode.com/problems/trapping-rain-water/">42</a></td></tr>
+    <tr><td>5</td><td>Gas Station</td><td><span class="badge medium">Medium</span></td><td>Circular scan</td><td><a class="lc-link" href="https://leetcode.com/problems/gas-station/">134</a></td></tr>
+    <tr><td>6</td><td>Partition Labels</td><td><span class="badge medium">Medium</span></td><td>Last-occurrence scan</td><td><a class="lc-link" href="https://leetcode.com/problems/partition-labels/">763</a></td></tr>
+    <tr><td>7</td><td>Candy</td><td><span class="badge hard">Hard</span></td><td>Two-pass scan</td><td><a class="lc-link" href="https://leetcode.com/problems/candy/">135</a></td></tr>
+    <tr><td>8</td><td>Best Time to Buy and Sell Stock II</td><td><span class="badge medium">Medium</span></td><td>Collect all ups</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/">122</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 5 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s5"><span class="section-num">5.</span> Heap-Based Greedy</h2>
+
+<h3>Pattern: Use a heap to always pick the best available element</h3>
+
+<h3>Task Scheduler</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">from</span> collections <span class="kw">import</span> Counter
+<span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">least_interval</span>(tasks, n):
+    counts = <span class="bi">list</span>(Counter(tasks).<span class="fn">values</span>())
+    max_count = <span class="bi">max</span>(counts)
+    max_count_tasks = counts.<span class="fn">count</span>(max_count)
+    <span class="cmt"># Greedy formula: fill frames of size (n+1)</span>
+    <span class="kw">return</span> <span class="bi">max</span>(<span class="bi">len</span>(tasks), (max_count - <span class="num">1</span>) * (n + <span class="num">1</span>) + max_count_tasks)</code></pre>
+
+<h3>Reorganize String (No two adjacent same)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">reorganize_string</span>(s):
+    counts = Counter(s)
+    heap = [(-cnt, ch) <span class="kw">for</span> ch, cnt <span class="kw">in</span> counts.<span class="fn">items</span>()]
+    heapq.<span class="fn">heapify</span>(heap)
+    result = []
+    prev = (<span class="num">0</span>, <span class="str">''</span>)
+
+    <span class="kw">while</span> heap:
+        cnt, ch = heapq.<span class="fn">heappop</span>(heap)
+        result.<span class="fn">append</span>(ch)
+        <span class="kw">if</span> prev[<span class="num">0</span>] &lt; <span class="num">0</span>:
+            heapq.<span class="fn">heappush</span>(heap, prev)
+        prev = (cnt + <span class="num">1</span>, ch)
+
+    <span class="kw">return</span> <span class="str">''</span>.<span class="fn">join</span>(result) <span class="kw">if</span> <span class="bi">len</span>(result) == <span class="bi">len</span>(s) <span class="kw">else</span> <span class="str">""</span></code></pre>
+
+<h3>Minimum Cost to Hire K Workers</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">mincost_to_hire</span>(quality, wage, k):
+    <span class="cmt"># Sort by wage/quality ratio. Greedily pick k cheapest qualities.</span>
+    workers = <span class="bi">sorted</span>(<span class="bi">zip</span>(quality, wage), key=<span class="kw">lambda</span> w: w[<span class="num">1</span>] / w[<span class="num">0</span>])
+    heap = []
+    quality_sum = <span class="num">0</span>
+    result = <span class="bi">float</span>(<span class="str">'inf'</span>)
+
+    <span class="kw">for</span> q, w <span class="kw">in</span> workers:
+        heapq.<span class="fn">heappush</span>(heap, -q)
+        quality_sum += q
+        <span class="kw">if</span> <span class="bi">len</span>(heap) &gt; k:
+            quality_sum += heapq.<span class="fn">heappop</span>(heap)  <span class="cmt"># remove largest</span>
+        <span class="kw">if</span> <span class="bi">len</span>(heap) == k:
+            result = <span class="bi">min</span>(result, quality_sum * w / q)
+
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Problems — Heap Greedy</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Task Scheduler</td><td><span class="badge medium">Medium</span></td><td>Max-heap scheduling</td><td><a class="lc-link" href="https://leetcode.com/problems/task-scheduler/">621</a></td></tr>
+    <tr><td>2</td><td>Reorganize String</td><td><span class="badge medium">Medium</span></td><td>Heap + cooldown</td><td><a class="lc-link" href="https://leetcode.com/problems/reorganize-string/">767</a></td></tr>
+    <tr><td>3</td><td>Minimum Cost to Hire K Workers</td><td><span class="badge hard">Hard</span></td><td>Ratio sort + heap</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-to-hire-k-workers/">857</a></td></tr>
+    <tr><td>4</td><td>IPO (Maximize Capital)</td><td><span class="badge hard">Hard</span></td><td>Two heaps</td><td><a class="lc-link" href="https://leetcode.com/problems/ipo/">502</a></td></tr>
+    <tr><td>5</td><td>Furthest Building You Can Reach</td><td><span class="badge medium">Medium</span></td><td>Min-heap for ladders</td><td><a class="lc-link" href="https://leetcode.com/problems/furthest-building-you-can-reach/">1642</a></td></tr>
+    <tr><td>6</td><td>Course Schedule III</td><td><span class="badge hard">Hard</span></td><td>Deadline sort + heap</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule-iii/">630</a></td></tr>
+    <tr><td>7</td><td>K Closest Points to Origin</td><td><span class="badge medium">Medium</span></td><td>Max-heap of size k</td><td><a class="lc-link" href="https://leetcode.com/problems/k-closest-points-to-origin/">973</a></td></tr>
+    <tr><td>8</td><td>Minimum Cost to Connect Sticks</td><td><span class="badge medium">Medium</span></td><td>Min-heap merge</td><td>1167</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 6 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s6"><span class="section-num">6.</span> Greedy on Arrays</h2>
+
+<h3>Best Time to Buy and Sell Stock II</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Collect every upward slope</span>
+<span class="kw">def</span> <span class="fn">max_profit</span>(prices):
+    <span class="kw">return</span> <span class="bi">sum</span>(<span class="bi">max</span>(<span class="num">0</span>, prices[i+<span class="num">1</span>] - prices[i]) <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(prices)-<span class="num">1</span>))</code></pre>
+
+<h3>Maximum Sum Circular Subarray</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Answer = max(normal Kadane, total_sum - min_subarray)</span>
+<span class="kw">def</span> <span class="fn">max_subarray_circular</span>(nums):
+    max_sum = cur_max = -<span class="bi">float</span>(<span class="str">'inf'</span>)
+    min_sum = cur_min = <span class="bi">float</span>(<span class="str">'inf'</span>)
+    total = <span class="num">0</span>
+    <span class="kw">for</span> num <span class="kw">in</span> nums:
+        cur_max = <span class="bi">max</span>(num, cur_max + num)
+        max_sum = <span class="bi">max</span>(max_sum, cur_max)
+        cur_min = <span class="bi">min</span>(num, cur_min + num)
+        min_sum = <span class="bi">min</span>(min_sum, cur_min)
+        total += num
+    <span class="kw">if</span> total == min_sum:  <span class="cmt"># all negative</span>
+        <span class="kw">return</span> max_sum
+    <span class="kw">return</span> <span class="bi">max</span>(max_sum, total - min_sum)</code></pre>
+
+<h3>Wiggle Subsequence</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Count direction changes — greedy on peaks and valleys</span>
+<span class="kw">def</span> <span class="fn">wiggle_max_length</span>(nums):
+    <span class="kw">if</span> <span class="bi">len</span>(nums) &lt; <span class="num">2</span>:
+        <span class="kw">return</span> <span class="bi">len</span>(nums)
+    up = down = <span class="num">1</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, <span class="bi">len</span>(nums)):
+        <span class="kw">if</span> nums[i] &gt; nums[i-<span class="num">1</span>]:
+            up = down + <span class="num">1</span>
+        <span class="kw">elif</span> nums[i] &lt; nums[i-<span class="num">1</span>]:
+            down = up + <span class="num">1</span>
+    <span class="kw">return</span> <span class="bi">max</span>(up, down)</code></pre>
+
+<h3>Problems — Greedy on Arrays</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Best Time Stock II</td><td><span class="badge medium">Medium</span></td><td>Collect ups</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/">122</a></td></tr>
+    <tr><td>2</td><td>Wiggle Subsequence</td><td><span class="badge medium">Medium</span></td><td>Peak/valley counting</td><td><a class="lc-link" href="https://leetcode.com/problems/wiggle-subsequence/">376</a></td></tr>
+    <tr><td>3</td><td>Max Sum Circular Subarray</td><td><span class="badge medium">Medium</span></td><td>Kadane variant</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-sum-circular-subarray/">918</a></td></tr>
+    <tr><td>4</td><td>Product of Array Except Self</td><td><span class="badge medium">Medium</span></td><td>Prefix/suffix</td><td><a class="lc-link" href="https://leetcode.com/problems/product-of-array-except-self/">238</a></td></tr>
+    <tr><td>5</td><td>Lemonade Change</td><td><span class="badge easy">Easy</span></td><td>Greedy change-making</td><td><a class="lc-link" href="https://leetcode.com/problems/lemonade-change/">860</a></td></tr>
+    <tr><td>6</td><td>Minimum Increment to Make Unique</td><td><span class="badge medium">Medium</span></td><td>Sort + increment</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-increment-to-make-array-unique/">945</a></td></tr>
+    <tr><td>7</td><td>Hand of Straights</td><td><span class="badge medium">Medium</span></td><td>Sort + greedy grouping</td><td><a class="lc-link" href="https://leetcode.com/problems/hand-of-straights/">846</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 7 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s7"><span class="section-num">7.</span> Greedy on Strings</h2>
+
+<h3>Remove K Digits (Smallest number)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Monotonic increasing stack. Remove peaks (larger digits before smaller).</span>
+<span class="kw">def</span> <span class="fn">remove_k_digits</span>(num, k):
+    stack = []
+    <span class="kw">for</span> d <span class="kw">in</span> num:
+        <span class="kw">while</span> k <span class="kw">and</span> stack <span class="kw">and</span> stack[-<span class="num">1</span>] &gt; d:
+            stack.<span class="fn">pop</span>()
+            k -= <span class="num">1</span>
+        stack.<span class="fn">append</span>(d)
+    stack = stack[:<span class="bi">len</span>(stack) - k]  <span class="cmt"># remove remaining from end</span>
+    <span class="kw">return</span> <span class="str">''</span>.<span class="fn">join</span>(stack).<span class="fn">lstrip</span>(<span class="str">'0'</span>) <span class="kw">or</span> <span class="str">'0'</span></code></pre>
+
+<h3>Remove Duplicate Letters (Smallest lexicographic)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">remove_duplicate_letters</span>(s):
+    last = {c: i <span class="kw">for</span> i, c <span class="kw">in</span> <span class="bi">enumerate</span>(s)}
+    stack = []
+    seen = <span class="bi">set</span>()
+    <span class="kw">for</span> i, c <span class="kw">in</span> <span class="bi">enumerate</span>(s):
+        <span class="kw">if</span> c <span class="kw">in</span> seen:
+            <span class="kw">continue</span>
+        <span class="kw">while</span> stack <span class="kw">and</span> c &lt; stack[-<span class="num">1</span>] <span class="kw">and</span> last[stack[-<span class="num">1</span>]] &gt; i:
+            seen.<span class="fn">discard</span>(stack.<span class="fn">pop</span>())
+        stack.<span class="fn">append</span>(c)
+        seen.<span class="fn">add</span>(c)
+    <span class="kw">return</span> <span class="str">''</span>.<span class="fn">join</span>(stack)</code></pre>
+
+<h3>Smallest Subsequence of Distinct Characters</h3>
+<div class="note tip"><strong>Same as Remove Duplicate Letters</strong> — identical algorithm, different LeetCode number (LC 1081 = LC 316).</div>
+
+<h3>Problems — Greedy on Strings</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Remove K Digits</td><td><span class="badge medium">Medium</span></td><td>Monotonic stack</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-k-digits/">402</a></td></tr>
+    <tr><td>2</td><td>Remove Duplicate Letters</td><td><span class="badge medium">Medium</span></td><td>Stack + last-occurrence</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-duplicate-letters/">316</a></td></tr>
+    <tr><td>3</td><td>Largest Number</td><td><span class="badge medium">Medium</span></td><td>Custom sort</td><td><a class="lc-link" href="https://leetcode.com/problems/largest-number/">179</a></td></tr>
+    <tr><td>4</td><td>Minimum Add to Make Parentheses Valid</td><td><span class="badge medium">Medium</span></td><td>Balance counter</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-add-to-make-parentheses-valid/">921</a></td></tr>
+    <tr><td>5</td><td>Minimum Deletions to Make Character Frequencies Unique</td><td><span class="badge medium">Medium</span></td><td>Frequency sort + reduce</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-deletions-to-make-character-frequencies-unique/">1647</a></td></tr>
+    <tr><td>6</td><td>Optimal Partition of String</td><td><span class="badge medium">Medium</span></td><td>Greedy split</td><td><a class="lc-link" href="https://leetcode.com/problems/optimal-partition-of-string/">2405</a></td></tr>
+    <tr><td>7</td><td>Break a Palindrome</td><td><span class="badge medium">Medium</span></td><td>First non-'a' → 'a'</td><td><a class="lc-link" href="https://leetcode.com/problems/break-a-palindrome/">1328</a></td></tr>
+    <tr><td>8</td><td>Create Maximum Number</td><td><span class="badge hard">Hard</span></td><td>Mono stack + merge</td><td><a class="lc-link" href="https://leetcode.com/problems/create-maximum-number/">321</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 8 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s8"><span class="section-num">8.</span> Greedy on Graphs</h2>
+
+<h3>Many classical graph algorithms are greedy at their core</h3>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Algorithm</th><th>Greedy Choice</th><th>Use Case</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Dijkstra's</td><td>Pick closest unvisited vertex</td><td>Shortest paths (non-negative)</td></tr>
+    <tr><td style="text-align:left">Prim's</td><td>Pick cheapest edge to MST</td><td>Minimum spanning tree</td></tr>
+    <tr><td style="text-align:left">Kruskal's</td><td>Pick lightest edge globally</td><td>Minimum spanning tree</td></tr>
+    <tr><td style="text-align:left">Topological (Kahn's)</td><td>Pick zero-indegree vertex</td><td>DAG ordering</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Minimum Spanning Tree — Kruskal's</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Greedy: always pick the lightest edge that doesn't form a cycle</span>
+<span class="kw">def</span> <span class="fn">kruskal</span>(n, edges):
+    edges.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">2</span>])
+    parent = <span class="bi">list</span>(<span class="bi">range</span>(n))
+
+    <span class="kw">def</span> <span class="fn">find</span>(x):
+        <span class="kw">while</span> parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        <span class="kw">return</span> x
+
+    cost = <span class="num">0</span>
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        ru, rv = <span class="fn">find</span>(u), <span class="fn">find</span>(v)
+        <span class="kw">if</span> ru != rv:
+            parent[ru] = rv
+            cost += w
+    <span class="kw">return</span> cost</code></pre>
+
+<h3>Min Cost to Connect All Points</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Prim's with heap: always extend to the nearest unvisited point</span>
+<span class="kw">def</span> <span class="fn">min_cost_connect</span>(points):
+    n = <span class="bi">len</span>(points)
+    visited = [<span class="bi">False</span>] * n
+    heap = [(<span class="num">0</span>, <span class="num">0</span>)]
+    cost = edges = <span class="num">0</span>
+    <span class="kw">while</span> edges &lt; n:
+        w, u = heapq.<span class="fn">heappop</span>(heap)
+        <span class="kw">if</span> visited[u]:
+            <span class="kw">continue</span>
+        visited[u] = <span class="bi">True</span>
+        cost += w
+        edges += <span class="num">1</span>
+        <span class="kw">for</span> v <span class="kw">in</span> <span class="bi">range</span>(n):
+            <span class="kw">if</span> <span class="kw">not</span> visited[v]:
+                d = <span class="bi">abs</span>(points[u][<span class="num">0</span>]-points[v][<span class="num">0</span>]) + <span class="bi">abs</span>(points[u][<span class="num">1</span>]-points[v][<span class="num">1</span>])
+                heapq.<span class="fn">heappush</span>(heap, (d, v))
+    <span class="kw">return</span> cost</code></pre>
+
+<h3>Problems — Greedy on Graphs</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Min Cost to Connect All Points</td><td><span class="badge medium">Medium</span></td><td>MST (Prim/Kruskal)</td><td><a class="lc-link" href="https://leetcode.com/problems/min-cost-to-connect-all-points/">1584</a></td></tr>
+    <tr><td>2</td><td>Network Delay Time</td><td><span class="badge medium">Medium</span></td><td>Dijkstra</td><td><a class="lc-link" href="https://leetcode.com/problems/network-delay-time/">743</a></td></tr>
+    <tr><td>3</td><td>Cheapest Flights Within K Stops</td><td><span class="badge medium">Medium</span></td><td>Modified BFS/Bellman</td><td><a class="lc-link" href="https://leetcode.com/problems/cheapest-flights-within-k-stops/">787</a></td></tr>
+    <tr><td>4</td><td>Optimize Water Distribution</td><td><span class="badge hard">Hard</span></td><td>Virtual node + MST</td><td>1168</td></tr>
+    <tr><td>5</td><td>Redundant Connection</td><td><span class="badge medium">Medium</span></td><td>Union-Find cycle</td><td><a class="lc-link" href="https://leetcode.com/problems/redundant-connection/">684</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 9 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s9"><span class="section-num">9.</span> Huffman Encoding &amp; Optimal Merge</h2>
+
+<h3>Huffman Coding (Greedy Optimal Prefix Code)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">huffman_cost</span>(frequencies):
+    <span class="cmt"># Greedy: always merge the two smallest frequencies</span>
+    heap = frequencies[:]
+    heapq.<span class="fn">heapify</span>(heap)
+    total_cost = <span class="num">0</span>
+    <span class="kw">while</span> <span class="bi">len</span>(heap) &gt; <span class="num">1</span>:
+        a = heapq.<span class="fn">heappop</span>(heap)
+        b = heapq.<span class="fn">heappop</span>(heap)
+        merged = a + b
+        total_cost += merged
+        heapq.<span class="fn">heappush</span>(heap, merged)
+    <span class="kw">return</span> total_cost</code></pre>
+
+<h3>Minimum Cost to Merge Stones</h3>
+<div class="note"><strong>Generalization:</strong> Merging K piles at a time instead of 2. When K &gt; 2, pure greedy fails — requires interval DP. But the Huffman (K=2) case is a clean greedy.</div>
+
+<h3>Connect Sticks / Minimum Cost to Connect Ropes</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Identical structure to Huffman cost</span>
+<span class="kw">def</span> <span class="fn">connect_sticks</span>(sticks):
+    heapq.<span class="fn">heapify</span>(sticks)
+    cost = <span class="num">0</span>
+    <span class="kw">while</span> <span class="bi">len</span>(sticks) &gt; <span class="num">1</span>:
+        a = heapq.<span class="fn">heappop</span>(sticks)
+        b = heapq.<span class="fn">heappop</span>(sticks)
+        cost += a + b
+        heapq.<span class="fn">heappush</span>(sticks, a + b)
+    <span class="kw">return</span> cost</code></pre>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 10 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s10"><span class="section-num">10.</span> Exchange Argument (Advanced Proof Technique)</h2>
+
+<h3>The Technique</h3>
+<p>To prove a greedy ordering is optimal:</p>
+<ol>
+  <li>Take any optimal solution that <strong>doesn't</strong> use the greedy order.</li>
+  <li>Find two adjacent elements that are "out of greedy order."</li>
+  <li>Show that <strong>swapping</strong> them produces a solution that's <strong>at least as good</strong>.</li>
+  <li>By repeatedly swapping, you can transform any OPT into the greedy solution.</li>
+</ol>
+
+<h3>Classic Example: Job Scheduling to Minimize Lateness</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># n jobs with processing time p[i] and deadline d[i].</span>
+<span class="cmt"># Schedule to minimize maximum lateness.</span>
+<span class="cmt"># Greedy: sort by deadline (Earliest Deadline First, EDF).</span>
+<span class="cmt"># Proof: swap any out-of-order pair → max lateness doesn't increase.</span>
+
+<span class="kw">def</span> <span class="fn">min_lateness</span>(jobs):
+    <span class="cmt"># jobs = [(processing_time, deadline), ...]</span>
+    jobs.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">1</span>])  <span class="cmt"># sort by deadline</span>
+    time = max_late = <span class="num">0</span>
+    <span class="kw">for</span> p, d <span class="kw">in</span> jobs:
+        time += p
+        max_late = <span class="bi">max</span>(max_late, time - d)
+    <span class="kw">return</span> max_late</code></pre>
+
+<h3>Exchange Argument for Custom Sorts</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Largest Number: prove a+b > b+a ordering is optimal via exchange</span>
+<span class="kw">from</span> functools <span class="kw">import</span> cmp_to_key
+
+<span class="kw">def</span> <span class="fn">largest_number</span>(nums):
+    strs = [<span class="bi">str</span>(n) <span class="kw">for</span> n <span class="kw">in</span> nums]
+    strs.<span class="fn">sort</span>(key=cmp_to_key(<span class="kw">lambda</span> a, b: -<span class="num">1</span> <span class="kw">if</span> a+b &gt; b+a <span class="kw">else</span> <span class="num">1</span>))
+    <span class="kw">return</span> <span class="str">''</span>.<span class="fn">join</span>(strs) <span class="kw">if</span> strs[<span class="num">0</span>] != <span class="str">'0'</span> <span class="kw">else</span> <span class="str">'0'</span></code></pre>
+
+<h3>Other Exchange Argument Problems</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Exchange Criterion</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Largest Number</td><td>a+b vs b+a string comparison</td><td><a class="lc-link" href="https://leetcode.com/problems/largest-number/">179</a></td></tr>
+    <tr><td>2</td><td>Minimum Cost to Hire K Workers</td><td>Wage/quality ratio ordering</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-to-hire-k-workers/">857</a></td></tr>
+    <tr><td>3</td><td>Queue Reconstruction by Height</td><td>Height desc, k asc</td><td><a class="lc-link" href="https://leetcode.com/problems/queue-reconstruction-by-height/">406</a></td></tr>
+    <tr><td>4</td><td>Candy</td><td>Two-pass ensures local optimality</td><td><a class="lc-link" href="https://leetcode.com/problems/candy/">135</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 11 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s11"><span class="section-num">11.</span> Matroid Theory &amp; Greedy Optimality</h2>
+
+<h3>Why Does Greedy Work for Some Problems But Not Others?</h3>
+<p>A <strong>matroid</strong> is a combinatorial structure where greedy is <em>guaranteed</em> to find the global optimum. If a problem can be modeled as optimizing a weight function over a matroid, greedy works perfectly.</p>
+
+<div class="note">
+  <strong>A matroid (S, I) has:</strong>
+  <ol style="margin-top:8px;">
+    <li><strong>Hereditary property:</strong> If A ∈ I and B ⊆ A, then B ∈ I.</li>
+    <li><strong>Exchange property:</strong> If A, B ∈ I and |A| &lt; |B|, then ∃ x ∈ B\A such that A ∪ {x} ∈ I.</li>
+  </ol>
+</div>
+
+<h3>Examples of Matroids in Algorithms</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Matroid</th><th>Ground Set</th><th>Independent Sets</th><th>Greedy Algorithm</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Graphic matroid</td><td>Edges of a graph</td><td>Acyclic edge sets (forests)</td><td>Kruskal's MST</td></tr>
+    <tr><td style="text-align:left">Uniform matroid</td><td>Any set S</td><td>Subsets of size ≤ k</td><td>Top-k selection</td></tr>
+    <tr><td style="text-align:left">Partition matroid</td><td>Items in groups</td><td>≤ 1 item per group</td><td>Weighted bipartite matching (special case)</td></tr>
+    <tr><td style="text-align:left">Linear matroid</td><td>Vectors</td><td>Linearly independent subsets</td><td>Gaussian elimination</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn"><strong>Non-matroids:</strong> 0/1 Knapsack, Coin Change (arbitrary denominations), and Travelling Salesman are NOT matroids — greedy fails on them.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 12 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s12"><span class="section-num">12.</span> Fractional &amp; Relaxation Greedy</h2>
+
+<h3>Fractional Knapsack</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Unlike 0/1 Knapsack, we CAN take fractions → greedy works</span>
+<span class="cmt"># Greedy: sort by value/weight ratio, take greedily</span>
+<span class="kw">def</span> <span class="fn">fractional_knapsack</span>(items, capacity):
+    <span class="cmt"># items = [(value, weight), ...]</span>
+    items.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="num">0</span>] / x[<span class="num">1</span>], reverse=<span class="bi">True</span>)
+    total = <span class="num">0</span>
+    <span class="kw">for</span> v, w <span class="kw">in</span> items:
+        <span class="kw">if</span> capacity &gt;= w:
+            total += v
+            capacity -= w
+        <span class="kw">else</span>:
+            total += v * (capacity / w)
+            <span class="kw">break</span>
+    <span class="kw">return</span> total</code></pre>
+
+<h3>When Greedy ≈ Relaxation</h3>
+<p>In many optimization problems, the greedy solution corresponds to the <strong>LP relaxation</strong> (linear programming without integrality constraints). If the LP relaxation happens to be integral (matroid, totally unimodular matrix), greedy gives the exact answer.</p>
+
+<h3>Activity Selection as LP</h3>
+<div class="note">The interval scheduling problem has a totally unimodular constraint matrix, which is why the greedy "earliest end time" algorithm gives the optimal integral solution directly.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 13 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s13"><span class="section-num">13.</span> Monotonic Stack / Deque Greedy</h2>
+
+<h3>Pattern: Maintain a stack/deque that is always monotonically increasing or decreasing</h3>
+
+<h3>Next Greater Element</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">next_greater</span>(nums):
+    result = [-<span class="num">1</span>] * <span class="bi">len</span>(nums)
+    stack = []  <span class="cmt"># indices, monotonically decreasing values</span>
+    <span class="kw">for</span> i, num <span class="kw">in</span> <span class="bi">enumerate</span>(nums):
+        <span class="kw">while</span> stack <span class="kw">and</span> nums[stack[-<span class="num">1</span>]] &lt; num:
+            result[stack.<span class="fn">pop</span>()] = num
+        stack.<span class="fn">append</span>(i)
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Largest Rectangle in Histogram</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">largest_rectangle</span>(heights):
+    stack = []
+    max_area = <span class="num">0</span>
+    heights.<span class="fn">append</span>(<span class="num">0</span>)  <span class="cmt"># sentinel</span>
+    <span class="kw">for</span> i, h <span class="kw">in</span> <span class="bi">enumerate</span>(heights):
+        <span class="kw">while</span> stack <span class="kw">and</span> heights[stack[-<span class="num">1</span>]] &gt; h:
+            height = heights[stack.<span class="fn">pop</span>()]
+            width = i <span class="kw">if</span> <span class="kw">not</span> stack <span class="kw">else</span> i - stack[-<span class="num">1</span>] - <span class="num">1</span>
+            max_area = <span class="bi">max</span>(max_area, height * width)
+        stack.<span class="fn">append</span>(i)
+    <span class="kw">return</span> max_area</code></pre>
+
+<h3>Daily Temperatures</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">daily_temperatures</span>(temps):
+    result = [<span class="num">0</span>] * <span class="bi">len</span>(temps)
+    stack = []
+    <span class="kw">for</span> i, t <span class="kw">in</span> <span class="bi">enumerate</span>(temps):
+        <span class="kw">while</span> stack <span class="kw">and</span> temps[stack[-<span class="num">1</span>]] &lt; t:
+            j = stack.<span class="fn">pop</span>()
+            result[j] = i - j
+        stack.<span class="fn">append</span>(i)
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Problems — Monotonic Stack / Deque</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Daily Temperatures</td><td><span class="badge medium">Medium</span></td><td>Next warmer</td><td><a class="lc-link" href="https://leetcode.com/problems/daily-temperatures/">739</a></td></tr>
+    <tr><td>2</td><td>Largest Rectangle in Histogram</td><td><span class="badge hard">Hard</span></td><td>Mono stack</td><td><a class="lc-link" href="https://leetcode.com/problems/largest-rectangle-in-histogram/">84</a></td></tr>
+    <tr><td>3</td><td>Remove K Digits</td><td><span class="badge medium">Medium</span></td><td>Mono increasing</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-k-digits/">402</a></td></tr>
+    <tr><td>4</td><td>Remove Duplicate Letters</td><td><span class="badge medium">Medium</span></td><td>Mono stack + freq</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-duplicate-letters/">316</a></td></tr>
+    <tr><td>5</td><td>Trapping Rain Water</td><td><span class="badge hard">Hard</span></td><td>Mono stack / 2-ptr</td><td><a class="lc-link" href="https://leetcode.com/problems/trapping-rain-water/">42</a></td></tr>
+    <tr><td>6</td><td>Online Stock Span</td><td><span class="badge medium">Medium</span></td><td>Mono decreasing</td><td><a class="lc-link" href="https://leetcode.com/problems/online-stock-span/">901</a></td></tr>
+    <tr><td>7</td><td>Sum of Subarray Minimums</td><td><span class="badge medium">Medium</span></td><td>Contribution + mono stack</td><td><a class="lc-link" href="https://leetcode.com/problems/sum-of-subarray-minimums/">907</a></td></tr>
+    <tr><td>8</td><td>Maximal Rectangle</td><td><span class="badge hard">Hard</span></td><td>Histogram per row</td><td><a class="lc-link" href="https://leetcode.com/problems/maximal-rectangle/">85</a></td></tr>
+    <tr><td>9</td><td>132 Pattern</td><td><span class="badge medium">Medium</span></td><td>Mono stack reverse</td><td><a class="lc-link" href="https://leetcode.com/problems/132-pattern/">456</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 14 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s14"><span class="section-num">14.</span> Greedy + Binary Search</h2>
+
+<h3>Pattern: Binary search on the answer, greedy to check feasibility</h3>
+
+<div class="note"><strong>Template:</strong> "Can we achieve value X?" → Binary search on X, use a greedy/linear scan to check if X is feasible.</div>
+
+<h3>Split Array Largest Sum (Minimize Max Subarray Sum)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">split_array</span>(nums, k):
+    <span class="kw">def</span> <span class="fn">can_split</span>(max_sum):
+        <span class="cmt"># Greedily pack elements into subarrays of sum ≤ max_sum</span>
+        parts = <span class="num">1</span>
+        cur = <span class="num">0</span>
+        <span class="kw">for</span> num <span class="kw">in</span> nums:
+            <span class="kw">if</span> cur + num &gt; max_sum:
+                parts += <span class="num">1</span>
+                cur = num
+            <span class="kw">else</span>:
+                cur += num
+        <span class="kw">return</span> parts &lt;= k
+
+    lo, hi = <span class="bi">max</span>(nums), <span class="bi">sum</span>(nums)
+    <span class="kw">while</span> lo &lt; hi:
+        mid = (lo + hi) // <span class="num">2</span>
+        <span class="kw">if</span> <span class="fn">can_split</span>(mid):
+            hi = mid
+        <span class="kw">else</span>:
+            lo = mid + <span class="num">1</span>
+    <span class="kw">return</span> lo</code></pre>
+
+<h3>Koko Eating Bananas</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">import</span> math
+
+<span class="kw">def</span> <span class="fn">min_eating_speed</span>(piles, h):
+    lo, hi = <span class="num">1</span>, <span class="bi">max</span>(piles)
+    <span class="kw">while</span> lo &lt; hi:
+        mid = (lo + hi) // <span class="num">2</span>
+        hours = <span class="bi">sum</span>(math.<span class="fn">ceil</span>(p / mid) <span class="kw">for</span> p <span class="kw">in</span> piles)
+        <span class="kw">if</span> hours &lt;= h:
+            hi = mid
+        <span class="kw">else</span>:
+            lo = mid + <span class="num">1</span>
+    <span class="kw">return</span> lo</code></pre>
+
+<h3>Problems — Greedy + Binary Search</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Binary Search On</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Split Array Largest Sum</td><td><span class="badge hard">Hard</span></td><td>Max subarray sum</td><td><a class="lc-link" href="https://leetcode.com/problems/split-array-largest-sum/">410</a></td></tr>
+    <tr><td>2</td><td>Koko Eating Bananas</td><td><span class="badge medium">Medium</span></td><td>Eating speed</td><td><a class="lc-link" href="https://leetcode.com/problems/koko-eating-bananas/">875</a></td></tr>
+    <tr><td>3</td><td>Capacity to Ship Packages</td><td><span class="badge medium">Medium</span></td><td>Ship capacity</td><td><a class="lc-link" href="https://leetcode.com/problems/capacity-to-ship-packages-within-d-days/">1011</a></td></tr>
+    <tr><td>4</td><td>Magnetic Force Between Balls</td><td><span class="badge medium">Medium</span></td><td>Min distance</td><td><a class="lc-link" href="https://leetcode.com/problems/magnetic-force-between-two-balls/">1552</a></td></tr>
+    <tr><td>5</td><td>Minimize Max Distance to Gas Station</td><td><span class="badge hard">Hard</span></td><td>Max distance</td><td>774</td></tr>
+    <tr><td>6</td><td>Aggressive Cows (Classic)</td><td><span class="badge medium">Medium</span></td><td>Min distance</td><td>—</td></tr>
+    <tr><td>7</td><td>Swim in Rising Water</td><td><span class="badge hard">Hard</span></td><td>Water level + BFS</td><td><a class="lc-link" href="https://leetcode.com/problems/swim-in-rising-water/">778</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 15 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s15"><span class="section-num">15.</span> Greedy vs DP — When Greedy Fails</h2>
+
+<h3>Common Traps</h3>
+<div class="note danger"><strong>Greedy looks right but is WRONG for:</strong>
+<ul style="margin-top:8px;">
+  <li><strong>0/1 Knapsack</strong> — items: (60, 10), (100, 20), (120, 30), capacity 50. Greedy by ratio picks items 1+2=160, but optimal is 2+3=220.</li>
+  <li><strong>Coin Change</strong> (arbitrary denominations) — coins [1, 3, 4], amount 6. Greedy picks 4+1+1=3 coins, but optimal is 3+3=2 coins.</li>
+  <li><strong>Longest Increasing Subsequence</strong> — greedy doesn't explore the "take smaller now to enable longer chain" tradeoff.</li>
+</ul>
+</div>
+
+<h3>How to Detect: Greedy or DP?</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Signal</th><th>Greedy</th><th>DP</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Choices are independent?</td><td>Yes → Greedy</td><td>No → DP</td></tr>
+    <tr><td style="text-align:left">Current choice affects future options?</td><td>No → Greedy</td><td>Yes → DP</td></tr>
+    <tr><td style="text-align:left">Can you prove exchange argument?</td><td>Yes → Greedy</td><td>Can't → DP</td></tr>
+    <tr><td style="text-align:left">Problem asks for count / all solutions?</td><td>Rarely greedy</td><td>Likely DP</td></tr>
+    <tr><td style="text-align:left">Problem has "at most K" constraint?</td><td>Sometimes</td><td>Usually DP</td></tr>
+    <tr><td style="text-align:left">Items can be split (fractional)?</td><td>Greedy</td><td>N/A</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Problems that Look Greedy but Need DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Why Greedy Fails</th><th>Correct Approach</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Coin Change</td><td>Arbitrary denominations</td><td>DP</td><td><a class="lc-link" href="https://leetcode.com/problems/coin-change/">322</a></td></tr>
+    <tr><td>2</td><td>0/1 Knapsack</td><td>Can't take fractions</td><td>DP</td><td>—</td></tr>
+    <tr><td>3</td><td>Longest Increasing Subsequence</td><td>Need global view</td><td>DP / Binary Search</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-subsequence/">300</a></td></tr>
+    <tr><td>4</td><td>Edit Distance</td><td>Choices interact</td><td>DP</td><td><a class="lc-link" href="https://leetcode.com/problems/edit-distance/">72</a></td></tr>
+    <tr><td>5</td><td>Word Break</td><td>Prefix choices affect suffix</td><td>DP</td><td><a class="lc-link" href="https://leetcode.com/problems/word-break/">139</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 16 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s16"><span class="section-num">16.</span> Master Problem List</h2>
+
+<h3>Easy (Start Here)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Assign Cookies</td><td>Sort + match</td><td><a class="lc-link" href="https://leetcode.com/problems/assign-cookies/">455</a></td></tr>
+    <tr><td>2</td><td>Lemonade Change</td><td>Greedy change</td><td><a class="lc-link" href="https://leetcode.com/problems/lemonade-change/">860</a></td></tr>
+    <tr><td>3</td><td>Best Time to Buy and Sell Stock</td><td>Single scan</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock/">121</a></td></tr>
+    <tr><td>4</td><td>Maximum Units on a Truck</td><td>Sort by units</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-units-on-a-truck/">1710</a></td></tr>
+    <tr><td>5</td><td>Last Stone Weight</td><td>Heap smash</td><td><a class="lc-link" href="https://leetcode.com/problems/last-stone-weight/">1046</a></td></tr>
+    <tr><td>6</td><td>Valid Palindrome II</td><td>Greedy skip</td><td><a class="lc-link" href="https://leetcode.com/problems/valid-palindrome-ii/">680</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Medium (Core Practice — Do ALL of These)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Jump Game</td><td>Farthest reach</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game/">55</a></td></tr>
+    <tr><td>2</td><td>Jump Game II</td><td>BFS-style greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game-ii/">45</a></td></tr>
+    <tr><td>3</td><td>Best Time Stock II</td><td>Collect ups</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/">122</a></td></tr>
+    <tr><td>4</td><td>Gas Station</td><td>Circular scan</td><td><a class="lc-link" href="https://leetcode.com/problems/gas-station/">134</a></td></tr>
+    <tr><td>5</td><td>Partition Labels</td><td>Last occurrence</td><td><a class="lc-link" href="https://leetcode.com/problems/partition-labels/">763</a></td></tr>
+    <tr><td>6</td><td>Non-overlapping Intervals</td><td>Interval scheduling</td><td><a class="lc-link" href="https://leetcode.com/problems/non-overlapping-intervals/">435</a></td></tr>
+    <tr><td>7</td><td>Merge Intervals</td><td>Sort + merge</td><td><a class="lc-link" href="https://leetcode.com/problems/merge-intervals/">56</a></td></tr>
+    <tr><td>8</td><td>Container With Most Water</td><td>Two pointers</td><td><a class="lc-link" href="https://leetcode.com/problems/container-with-most-water/">11</a></td></tr>
+    <tr><td>9</td><td>Task Scheduler</td><td>Frequency formula</td><td><a class="lc-link" href="https://leetcode.com/problems/task-scheduler/">621</a></td></tr>
+    <tr><td>10</td><td>Queue Reconstruction by Height</td><td>Sort + insert</td><td><a class="lc-link" href="https://leetcode.com/problems/queue-reconstruction-by-height/">406</a></td></tr>
+    <tr><td>11</td><td>Boats to Save People</td><td>Two pointer</td><td><a class="lc-link" href="https://leetcode.com/problems/boats-to-save-people/">881</a></td></tr>
+    <tr><td>12</td><td>Remove K Digits</td><td>Mono stack</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-k-digits/">402</a></td></tr>
+    <tr><td>13</td><td>Remove Duplicate Letters</td><td>Mono stack + freq</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-duplicate-letters/">316</a></td></tr>
+    <tr><td>14</td><td>Reorganize String</td><td>Heap alternate</td><td><a class="lc-link" href="https://leetcode.com/problems/reorganize-string/">767</a></td></tr>
+    <tr><td>15</td><td>Largest Number</td><td>Custom comparator</td><td><a class="lc-link" href="https://leetcode.com/problems/largest-number/">179</a></td></tr>
+    <tr><td>16</td><td>Min Arrows to Burst Balloons</td><td>Interval sweep</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons/">452</a></td></tr>
+    <tr><td>17</td><td>Wiggle Subsequence</td><td>Peak/valley</td><td><a class="lc-link" href="https://leetcode.com/problems/wiggle-subsequence/">376</a></td></tr>
+    <tr><td>18</td><td>Koko Eating Bananas</td><td>Binary search + greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/koko-eating-bananas/">875</a></td></tr>
+    <tr><td>19</td><td>Video Stitching</td><td>Jump game on intervals</td><td><a class="lc-link" href="https://leetcode.com/problems/video-stitching/">1024</a></td></tr>
+    <tr><td>20</td><td>Furthest Building You Can Reach</td><td>Min-heap for ladders</td><td><a class="lc-link" href="https://leetcode.com/problems/furthest-building-you-can-reach/">1642</a></td></tr>
+    <tr><td>21</td><td>Daily Temperatures</td><td>Mono stack</td><td><a class="lc-link" href="https://leetcode.com/problems/daily-temperatures/">739</a></td></tr>
+    <tr><td>22</td><td>Min Cost to Connect All Points</td><td>MST</td><td><a class="lc-link" href="https://leetcode.com/problems/min-cost-to-connect-all-points/">1584</a></td></tr>
+    <tr><td>23</td><td>Capacity to Ship Packages</td><td>BS + greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/capacity-to-ship-packages-within-d-days/">1011</a></td></tr>
+    <tr><td>24</td><td>Minimum Deletions for Unique Freq</td><td>Freq sort + reduce</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-deletions-to-make-character-frequencies-unique/">1647</a></td></tr>
+    <tr><td>25</td><td>Hand of Straights</td><td>Greedy grouping</td><td><a class="lc-link" href="https://leetcode.com/problems/hand-of-straights/">846</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Hard (Target 10–15 of These)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Candy</td><td>Two-pass greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/candy/">135</a></td></tr>
+    <tr><td>2</td><td>Trapping Rain Water</td><td>Two pointers / stack</td><td><a class="lc-link" href="https://leetcode.com/problems/trapping-rain-water/">42</a></td></tr>
+    <tr><td>3</td><td>IPO</td><td>Two heaps</td><td><a class="lc-link" href="https://leetcode.com/problems/ipo/">502</a></td></tr>
+    <tr><td>4</td><td>Course Schedule III</td><td>Deadline sort + heap</td><td><a class="lc-link" href="https://leetcode.com/problems/course-schedule-iii/">630</a></td></tr>
+    <tr><td>5</td><td>Minimum Cost to Hire K Workers</td><td>Ratio sort + heap</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-to-hire-k-workers/">857</a></td></tr>
+    <tr><td>6</td><td>Split Array Largest Sum</td><td>BS + greedy check</td><td><a class="lc-link" href="https://leetcode.com/problems/split-array-largest-sum/">410</a></td></tr>
+    <tr><td>7</td><td>Largest Rectangle in Histogram</td><td>Mono stack</td><td><a class="lc-link" href="https://leetcode.com/problems/largest-rectangle-in-histogram/">84</a></td></tr>
+    <tr><td>8</td><td>Create Maximum Number</td><td>Mono stack + merge</td><td><a class="lc-link" href="https://leetcode.com/problems/create-maximum-number/">321</a></td></tr>
+    <tr><td>9</td><td>Minimum Window Substring</td><td>Sliding window greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-window-substring/">76</a></td></tr>
+    <tr><td>10</td><td>Patching Array</td><td>Greedy coverage</td><td><a class="lc-link" href="https://leetcode.com/problems/patching-array/">330</a></td></tr>
+    <tr><td>11</td><td>Minimum Number of Refueling Stops</td><td>Max-heap greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-refueling-stops/">871</a></td></tr>
+    <tr><td>12</td><td>Swim in Rising Water</td><td>BS + BFS/Dijkstra</td><td><a class="lc-link" href="https://leetcode.com/problems/swim-in-rising-water/">778</a></td></tr>
+    <tr><td>13</td><td>Maximal Rectangle</td><td>Histogram per row</td><td><a class="lc-link" href="https://leetcode.com/problems/maximal-rectangle/">85</a></td></tr>
+    <tr><td>14</td><td>Minimize Deviation in Array</td><td>Heap + greedy reduce</td><td><a class="lc-link" href="https://leetcode.com/problems/minimize-deviation-in-array/">1675</a></td></tr>
+    <tr><td>15</td><td>Stamping the Sequence</td><td>Reverse greedy</td><td><a class="lc-link" href="https://leetcode.com/problems/stamping-the-sequence/">936</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Quick Reference -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="quick-ref"><span class="section-num">★</span> Quick Reference: Which Greedy Pattern?</h2>
+
+<div class="decision-tree"><span class="q">"Schedule/select maximum non-overlapping intervals"</span>
+<span class="branch">  └──</span> <span class="answer">Sort by end time, pick earliest-ending</span>
+
+<span class="q">"Minimize resources for overlapping items"</span>
+<span class="branch">  └──</span> <span class="answer">Sort by start, heap of end times</span>
+
+<span class="q">"Can I reach the end / what's the minimum jumps?"</span>
+<span class="branch">  └──</span> <span class="answer">Farthest-reach scanning (BFS-style greedy)</span>
+
+<span class="q">"Build smallest/largest number by removing digits"</span>
+<span class="branch">  └──</span> <span class="answer">Monotonic stack</span>
+
+<span class="q">"Always pick the best available item"</span>
+<span class="branch">  ├── Fixed order?      →</span> <span class="answer">Sort + linear scan</span>
+<span class="branch">  └── Dynamic best?     →</span> <span class="answer">Heap (priority queue)</span>
+
+<span class="q">"Can we achieve X?" (minimize max / maximize min)</span>
+<span class="branch">  └──</span> <span class="answer">Binary search on answer + greedy feasibility check</span>
+
+<span class="q">"Custom ordering proof needed?"</span>
+<span class="branch">  └──</span> <span class="answer">Exchange argument (swap adjacent elements)</span>
+
+<span class="q">"Merge / combine items optimally"</span>
+<span class="branch">  └──</span> <span class="answer">Huffman / min-heap merge</span>
+
+<span class="q">"Find next greater/smaller element"</span>
+<span class="branch">  └──</span> <span class="answer">Monotonic stack</span>
+
+<span class="q">"Track water / histogram areas"</span>
+<span class="branch">  └──</span> <span class="answer">Two pointers or monotonic stack</span>
+
+<span class="q">"Fractional items allowed?"</span>
+<span class="branch">  ├── Yes →</span> <span class="answer">Greedy (sort by value/weight ratio)</span>
+<span class="branch">  └── No  →</span> <span class="answer">DP (0/1 Knapsack)</span></div>
+
+<!-- Footer -->
+<div class="footer">
+  <em>Total: 90+ curated problems covering every greedy pattern you'll encounter in MAANG interviews.</em>
+</div>
+
+</main>
+</div>
+</body>
+</html>

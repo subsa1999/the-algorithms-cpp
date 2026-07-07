@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Programming — Basic to Advanced</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="layout-dsa accent-blue">
+<div class="wrapper">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="back-nav"><a href="index.html">← Back to Paperwork</a></div>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Core Concepts &amp; Framework</a></li>
+    <li><a href="#s2">1D DP — Linear Sequences</a></li>
+    <li><a href="#s3">2D DP — Grid Problems</a></li>
+    <li><a href="#s4">Knapsack Patterns</a></li>
+    <li><a href="#s5">Subsequence DP</a></li>
+    <li><a href="#s6">String DP</a></li>
+    <li><a href="#s7">Partition / MCM DP</a></li>
+    <li><a href="#s8">Interval DP</a></li>
+    <li><a href="#s9">State Machine DP</a></li>
+    <li><a href="#s10">Bitmask DP</a></li>
+    <li><a href="#s11">Digit DP</a></li>
+    <li><a href="#s12">Tree DP</a></li>
+    <li><a href="#s13">DP on Graphs (DAG)</a></li>
+    <li><a href="#s14">Game Theory DP</a></li>
+    <li><a href="#s15">DP Optimizations</a></li>
+    <li><a href="#s16">Master Problem List</a></li>
+  </ol>
+</nav>
+
+<!-- ── Main ── -->
+<main class="content">
+
+<header class="hero">
+  <h1>Dynamic Programming — Basic to Advanced</h1>
+  <p class="subtitle">Complete reference with patterns, templates, and curated problems.</p>
+</header>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 1 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s1"><span class="section-num">1.</span> Core Concepts &amp; Framework</h2>
+
+<h3>What is DP?</h3>
+<p>Dynamic Programming is an optimization technique for problems with <strong>overlapping subproblems</strong> and <strong>optimal substructure</strong>. Instead of recomputing the same subproblems, we store their results.</p>
+
+<h3>The DP Thinking Framework</h3>
+<div class="note">
+  <strong>5-Step Recipe (use for every DP problem):</strong>
+  <ol style="margin-top:8px;">
+    <li><strong>Define state</strong> — What does <code>dp[i]</code> (or <code>dp[i][j]</code>) represent?</li>
+    <li><strong>Find recurrence</strong> — How does <code>dp[i]</code> relate to smaller subproblems?</li>
+    <li><strong>Identify base cases</strong> — What are the trivially known answers?</li>
+    <li><strong>Determine iteration order</strong> — Fill table so dependencies are computed first.</li>
+    <li><strong>Locate answer</strong> — Where in the table is the final answer?</li>
+  </ol>
+</div>
+
+<h3>Top-Down (Memoization) vs Bottom-Up (Tabulation)</h3>
+<div class="algo-compare">
+  <div class="algo-card">
+    <h4>Top-Down (Memoization)</h4>
+    <p>Recursive + cache. Natural to write. Only computes needed states.</p>
+    <p>Drawback: recursion stack depth; Python has ~1000 limit by default.</p>
+  </div>
+  <div class="algo-card">
+    <h4>Bottom-Up (Tabulation)</h4>
+    <p>Iterative + table. No stack overflow. Easier to optimize space.</p>
+    <p>Drawback: must determine correct iteration order.</p>
+  </div>
+</div>
+
+<h3>Top-Down Template</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+<span class="kw">def</span> <span class="fn">solve</span>(params):
+    <span class="bi">@lru_cache</span>(maxsize=<span class="bi">None</span>)
+    <span class="kw">def</span> <span class="fn">dp</span>(state):
+        <span class="cmt"># Base case</span>
+        <span class="kw">if</span> base_condition:
+            <span class="kw">return</span> base_value
+        <span class="cmt"># Recurrence</span>
+        <span class="kw">return</span> <span class="bi">min</span>/<span class="bi">max</span>(<span class="fn">dp</span>(smaller_state) + cost <span class="kw">for</span> choice <span class="kw">in</span> choices)
+    <span class="kw">return</span> <span class="fn">dp</span>(initial_state)</code></pre>
+
+<h3>Bottom-Up Template</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">solve</span>(params):
+    dp = [base_values]
+    <span class="kw">for</span> i <span class="kw">in</span> iteration_order:
+        <span class="kw">for</span> choice <span class="kw">in</span> choices:
+            dp[i] = <span class="bi">min</span>/<span class="bi">max</span>(dp[i], dp[smaller] + cost)
+    <span class="kw">return</span> dp[answer_location]</code></pre>
+
+<h3>Space Optimization Trick</h3>
+<div class="note tip"><strong>Tip:</strong> If <code>dp[i]</code> only depends on <code>dp[i-1]</code> (or the previous row), you can reduce space from O(n²) to O(n) by keeping only two rows (or even one row with careful ordering).</div>
+
+<h3>Common State Dimensions</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Dimension</th><th>State Variable</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Index</td><td><code>dp[i]</code></td><td>Fibonacci, House Robber</td></tr>
+    <tr><td style="text-align:left">Index + Capacity</td><td><code>dp[i][w]</code></td><td>Knapsack, Coin Change</td></tr>
+    <tr><td style="text-align:left">Two indices</td><td><code>dp[i][j]</code></td><td>LCS, Edit Distance</td></tr>
+    <tr><td style="text-align:left">Index + Boolean</td><td><code>dp[i][hold]</code></td><td>Stock Buy/Sell</td></tr>
+    <tr><td style="text-align:left">Bitmask</td><td><code>dp[mask]</code></td><td>TSP, Assign tasks</td></tr>
+    <tr><td style="text-align:left">Grid position</td><td><code>dp[r][c]</code></td><td>Unique Paths, Min Path Sum</td></tr>
+    <tr><td style="text-align:left">Interval</td><td><code>dp[i][j]</code></td><td>MCM, Burst Balloons</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 2 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s2"><span class="section-num">2.</span> 1D DP — Linear Sequences</h2>
+
+<h3>Pattern: dp[i] depends on dp[i-1], dp[i-2], or a scan of dp[0..i-1]</h3>
+
+<h3>Fibonacci / Climbing Stairs</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">climb_stairs</span>(n):
+    <span class="kw">if</span> n &lt;= <span class="num">2</span>:
+        <span class="kw">return</span> n
+    prev2, prev1 = <span class="num">1</span>, <span class="num">2</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(<span class="num">3</span>, n + <span class="num">1</span>):
+        prev2, prev1 = prev1, prev2 + prev1
+    <span class="kw">return</span> prev1</code></pre>
+
+<h3>House Robber</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i] = max money robbing houses 0..i</span>
+<span class="cmt"># dp[i] = max(dp[i-1], dp[i-2] + nums[i])</span>
+<span class="kw">def</span> <span class="fn">rob</span>(nums):
+    prev2, prev1 = <span class="num">0</span>, <span class="num">0</span>
+    <span class="kw">for</span> num <span class="kw">in</span> nums:
+        prev2, prev1 = prev1, <span class="bi">max</span>(prev1, prev2 + num)
+    <span class="kw">return</span> prev1</code></pre>
+
+<h3>Maximum Subarray (Kadane's Algorithm)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i] = max subarray sum ending at index i</span>
+<span class="cmt"># dp[i] = max(nums[i], dp[i-1] + nums[i])</span>
+<span class="kw">def</span> <span class="fn">max_subarray</span>(nums):
+    curr = result = nums[<span class="num">0</span>]
+    <span class="kw">for</span> num <span class="kw">in</span> nums[<span class="num">1</span>:]:
+        curr = <span class="bi">max</span>(num, curr + num)
+        result = <span class="bi">max</span>(result, curr)
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Coin Change (Min coins)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[a] = min coins to make amount a</span>
+<span class="kw">def</span> <span class="fn">coin_change</span>(coins, amount):
+    dp = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * (amount + <span class="num">1</span>)
+    dp[<span class="num">0</span>] = <span class="num">0</span>
+    <span class="kw">for</span> a <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, amount + <span class="num">1</span>):
+        <span class="kw">for</span> c <span class="kw">in</span> coins:
+            <span class="kw">if</span> c &lt;= a:
+                dp[a] = <span class="bi">min</span>(dp[a], dp[a - c] + <span class="num">1</span>)
+    <span class="kw">return</span> dp[amount] <span class="kw">if</span> dp[amount] != <span class="bi">float</span>(<span class="str">'inf'</span>) <span class="kw">else</span> -<span class="num">1</span></code></pre>
+
+<h3>Decode Ways</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i] = number of ways to decode s[0..i-1]</span>
+<span class="kw">def</span> <span class="fn">num_decodings</span>(s):
+    <span class="kw">if</span> <span class="kw">not</span> s <span class="kw">or</span> s[<span class="num">0</span>] == <span class="str">'0'</span>:
+        <span class="kw">return</span> <span class="num">0</span>
+    prev2, prev1 = <span class="num">1</span>, <span class="num">1</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, <span class="bi">len</span>(s)):
+        curr = <span class="num">0</span>
+        <span class="kw">if</span> s[i] != <span class="str">'0'</span>:
+            curr += prev1
+        <span class="kw">if</span> <span class="num">10</span> &lt;= <span class="bi">int</span>(s[i-<span class="num">1</span>:i+<span class="num">1</span>]) &lt;= <span class="num">26</span>:
+            curr += prev2
+        prev2, prev1 = prev1, curr
+    <span class="kw">return</span> prev1</code></pre>
+
+<h3>Problems — 1D DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Climbing Stairs</td><td><span class="badge easy">Easy</span></td><td>Fibonacci</td><td><a class="lc-link" href="https://leetcode.com/problems/climbing-stairs/">70</a></td></tr>
+    <tr><td>2</td><td>House Robber</td><td><span class="badge medium">Medium</span></td><td>Take/Skip</td><td><a class="lc-link" href="https://leetcode.com/problems/house-robber/">198</a></td></tr>
+    <tr><td>3</td><td>House Robber II</td><td><span class="badge medium">Medium</span></td><td>Circular take/skip</td><td><a class="lc-link" href="https://leetcode.com/problems/house-robber-ii/">213</a></td></tr>
+    <tr><td>4</td><td>Maximum Subarray</td><td><span class="badge medium">Medium</span></td><td>Kadane's</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-subarray/">53</a></td></tr>
+    <tr><td>5</td><td>Coin Change</td><td><span class="badge medium">Medium</span></td><td>Unbounded Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/coin-change/">322</a></td></tr>
+    <tr><td>6</td><td>Decode Ways</td><td><span class="badge medium">Medium</span></td><td>1D counting</td><td><a class="lc-link" href="https://leetcode.com/problems/decode-ways/">91</a></td></tr>
+    <tr><td>7</td><td>Min Cost Climbing Stairs</td><td><span class="badge easy">Easy</span></td><td>Fibonacci variant</td><td><a class="lc-link" href="https://leetcode.com/problems/min-cost-climbing-stairs/">746</a></td></tr>
+    <tr><td>8</td><td>Jump Game</td><td><span class="badge medium">Medium</span></td><td>Greedy/DP</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game/">55</a></td></tr>
+    <tr><td>9</td><td>Jump Game II</td><td><span class="badge medium">Medium</span></td><td>Min jumps</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game-ii/">45</a></td></tr>
+    <tr><td>10</td><td>Maximum Product Subarray</td><td><span class="badge medium">Medium</span></td><td>Track min &amp; max</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-product-subarray/">152</a></td></tr>
+    <tr><td>11</td><td>Word Break</td><td><span class="badge medium">Medium</span></td><td>1D boolean DP</td><td><a class="lc-link" href="https://leetcode.com/problems/word-break/">139</a></td></tr>
+    <tr><td>12</td><td>Perfect Squares</td><td><span class="badge medium">Medium</span></td><td>Unbounded Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/perfect-squares/">279</a></td></tr>
+    <tr><td>13</td><td>Longest Turbulent Subarray</td><td><span class="badge medium">Medium</span></td><td>State tracking</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-turbulent-subarray/">978</a></td></tr>
+    <tr><td>14</td><td>Delete and Earn</td><td><span class="badge medium">Medium</span></td><td>House Robber variant</td><td><a class="lc-link" href="https://leetcode.com/problems/delete-and-earn/">740</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 3 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s3"><span class="section-num">3.</span> 2D DP — Grid Problems</h2>
+
+<h3>Pattern: dp[r][c] = answer for reaching cell (r, c)</h3>
+
+<h3>Unique Paths</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[r][c] = number of paths from (0,0) to (r,c)</span>
+<span class="kw">def</span> <span class="fn">unique_paths</span>(m, n):
+    dp = [[<span class="num">1</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m)]
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m):
+        <span class="kw">for</span> c <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n):
+            dp[r][c] = dp[r-<span class="num">1</span>][c] + dp[r][c-<span class="num">1</span>]
+    <span class="kw">return</span> dp[m-<span class="num">1</span>][n-<span class="num">1</span>]</code></pre>
+
+<h3>Minimum Path Sum</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">min_path_sum</span>(grid):
+    m, n = <span class="bi">len</span>(grid), <span class="bi">len</span>(grid[<span class="num">0</span>])
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="bi">range</span>(m):
+        <span class="kw">for</span> c <span class="kw">in</span> <span class="bi">range</span>(n):
+            <span class="kw">if</span> r == <span class="num">0</span> <span class="kw">and</span> c == <span class="num">0</span>:
+                <span class="kw">continue</span>
+            <span class="kw">elif</span> r == <span class="num">0</span>:
+                grid[r][c] += grid[r][c-<span class="num">1</span>]
+            <span class="kw">elif</span> c == <span class="num">0</span>:
+                grid[r][c] += grid[r-<span class="num">1</span>][c]
+            <span class="kw">else</span>:
+                grid[r][c] += <span class="bi">min</span>(grid[r-<span class="num">1</span>][c], grid[r][c-<span class="num">1</span>])
+    <span class="kw">return</span> grid[m-<span class="num">1</span>][n-<span class="num">1</span>]</code></pre>
+
+<h3>Maximal Square</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[r][c] = side length of largest square with bottom-right at (r,c)</span>
+<span class="kw">def</span> <span class="fn">maximal_square</span>(matrix):
+    m, n = <span class="bi">len</span>(matrix), <span class="bi">len</span>(matrix[<span class="num">0</span>])
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m)]
+    max_side = <span class="num">0</span>
+    <span class="kw">for</span> r <span class="kw">in</span> <span class="bi">range</span>(m):
+        <span class="kw">for</span> c <span class="kw">in</span> <span class="bi">range</span>(n):
+            <span class="kw">if</span> matrix[r][c] == <span class="str">'1'</span>:
+                <span class="kw">if</span> r == <span class="num">0</span> <span class="kw">or</span> c == <span class="num">0</span>:
+                    dp[r][c] = <span class="num">1</span>
+                <span class="kw">else</span>:
+                    dp[r][c] = <span class="bi">min</span>(dp[r-<span class="num">1</span>][c], dp[r][c-<span class="num">1</span>], dp[r-<span class="num">1</span>][c-<span class="num">1</span>]) + <span class="num">1</span>
+                max_side = <span class="bi">max</span>(max_side, dp[r][c])
+    <span class="kw">return</span> max_side ** <span class="num">2</span></code></pre>
+
+<h3>Triangle (Minimum Path)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Bottom-up: start from bottom row, fold upward</span>
+<span class="kw">def</span> <span class="fn">minimum_total</span>(triangle):
+    dp = triangle[-<span class="num">1</span>][:]
+    <span class="kw">for</span> row <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(triangle) - <span class="num">2</span>, -<span class="num">1</span>, -<span class="num">1</span>):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(triangle[row])):
+            dp[j] = triangle[row][j] + <span class="bi">min</span>(dp[j], dp[j+<span class="num">1</span>])
+    <span class="kw">return</span> dp[<span class="num">0</span>]</code></pre>
+
+<h3>Problems — 2D Grid DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Unique Paths</td><td><span class="badge medium">Medium</span></td><td>Path counting</td><td><a class="lc-link" href="https://leetcode.com/problems/unique-paths/">62</a></td></tr>
+    <tr><td>2</td><td>Unique Paths II</td><td><span class="badge medium">Medium</span></td><td>Path counting + obstacles</td><td><a class="lc-link" href="https://leetcode.com/problems/unique-paths-ii/">63</a></td></tr>
+    <tr><td>3</td><td>Minimum Path Sum</td><td><span class="badge medium">Medium</span></td><td>Min-cost path</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-path-sum/">64</a></td></tr>
+    <tr><td>4</td><td>Triangle</td><td><span class="badge medium">Medium</span></td><td>Bottom-up DP</td><td><a class="lc-link" href="https://leetcode.com/problems/triangle/">120</a></td></tr>
+    <tr><td>5</td><td>Maximal Square</td><td><span class="badge medium">Medium</span></td><td>Square DP</td><td><a class="lc-link" href="https://leetcode.com/problems/maximal-square/">221</a></td></tr>
+    <tr><td>6</td><td>Dungeon Game</td><td><span class="badge hard">Hard</span></td><td>Reverse grid DP</td><td><a class="lc-link" href="https://leetcode.com/problems/dungeon-game/">174</a></td></tr>
+    <tr><td>7</td><td>Cherry Pickup</td><td><span class="badge hard">Hard</span></td><td>Two-agent grid DP</td><td><a class="lc-link" href="https://leetcode.com/problems/cherry-pickup/">741</a></td></tr>
+    <tr><td>8</td><td>Cherry Pickup II</td><td><span class="badge hard">Hard</span></td><td>Two-robot DP</td><td><a class="lc-link" href="https://leetcode.com/problems/cherry-pickup-ii/">1463</a></td></tr>
+    <tr><td>9</td><td>Minimum Falling Path Sum</td><td><span class="badge medium">Medium</span></td><td>Grid DP</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-falling-path-sum/">931</a></td></tr>
+    <tr><td>10</td><td>Maximal Rectangle</td><td><span class="badge hard">Hard</span></td><td>Histogram DP</td><td><a class="lc-link" href="https://leetcode.com/problems/maximal-rectangle/">85</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 4 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s4"><span class="section-num">4.</span> Knapsack Patterns</h2>
+
+<h3>4a. 0/1 Knapsack</h3>
+<div class="note"><strong>Pattern:</strong> Given items with weight &amp; value, pick subset to maximize value within capacity. Each item used at most once.</div>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[w] = max value achievable with capacity w</span>
+<span class="kw">def</span> <span class="fn">knapsack_01</span>(weights, values, capacity):
+    dp = [<span class="num">0</span>] * (capacity + <span class="num">1</span>)
+    <span class="kw">for</span> w, v <span class="kw">in</span> <span class="bi">zip</span>(weights, values):
+        <span class="kw">for</span> c <span class="kw">in</span> <span class="bi">range</span>(capacity, w - <span class="num">1</span>, -<span class="num">1</span>):  <span class="cmt"># reverse to avoid reuse</span>
+            dp[c] = <span class="bi">max</span>(dp[c], dp[c - w] + v)
+    <span class="kw">return</span> dp[capacity]</code></pre>
+
+<h3>4b. Unbounded Knapsack</h3>
+<div class="note"><strong>Pattern:</strong> Same as 0/1 but each item can be used unlimited times. Iterate capacity forward.</div>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Coin Change: unbounded knapsack counting</span>
+<span class="kw">def</span> <span class="fn">coin_change_ways</span>(coins, amount):
+    dp = [<span class="num">0</span>] * (amount + <span class="num">1</span>)
+    dp[<span class="num">0</span>] = <span class="num">1</span>
+    <span class="kw">for</span> c <span class="kw">in</span> coins:            <span class="cmt"># coin loop outer → combinations</span>
+        <span class="kw">for</span> a <span class="kw">in</span> <span class="bi">range</span>(c, amount + <span class="num">1</span>):  <span class="cmt"># forward → reuse allowed</span>
+            dp[a] += dp[a - c]
+    <span class="kw">return</span> dp[amount]</code></pre>
+
+<h3>4c. Subset Sum / Partition Equal Subset</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Can we partition array into two subsets with equal sum?</span>
+<span class="kw">def</span> <span class="fn">can_partition</span>(nums):
+    total = <span class="bi">sum</span>(nums)
+    <span class="kw">if</span> total % <span class="num">2</span>:
+        <span class="kw">return</span> <span class="bi">False</span>
+    target = total // <span class="num">2</span>
+    dp = [<span class="bi">False</span>] * (target + <span class="num">1</span>)
+    dp[<span class="num">0</span>] = <span class="bi">True</span>
+    <span class="kw">for</span> num <span class="kw">in</span> nums:
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(target, num - <span class="num">1</span>, -<span class="num">1</span>):  <span class="cmt"># 0/1: reverse</span>
+            dp[j] = dp[j] <span class="kw">or</span> dp[j - num]
+    <span class="kw">return</span> dp[target]</code></pre>
+
+<h3>Key Distinction: Loop Order</h3>
+<div class="note warn"><strong>Critical:</strong>
+<br>• <strong>0/1 Knapsack:</strong> inner loop goes <strong>backward</strong> (capacity → 0) to prevent reusing items.
+<br>• <strong>Unbounded:</strong> inner loop goes <strong>forward</strong> (0 → capacity) to allow reuse.
+<br>• <strong>Combinations vs Permutations:</strong> outer loop = items → combinations; outer loop = amount → permutations.</div>
+
+<h3>Problems — Knapsack</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Variant</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Partition Equal Subset Sum</td><td><span class="badge medium">Medium</span></td><td>0/1 Subset Sum</td><td><a class="lc-link" href="https://leetcode.com/problems/partition-equal-subset-sum/">416</a></td></tr>
+    <tr><td>2</td><td>Target Sum</td><td><span class="badge medium">Medium</span></td><td>0/1 counting</td><td><a class="lc-link" href="https://leetcode.com/problems/target-sum/">494</a></td></tr>
+    <tr><td>3</td><td>Coin Change</td><td><span class="badge medium">Medium</span></td><td>Unbounded min</td><td><a class="lc-link" href="https://leetcode.com/problems/coin-change/">322</a></td></tr>
+    <tr><td>4</td><td>Coin Change II</td><td><span class="badge medium">Medium</span></td><td>Unbounded counting</td><td><a class="lc-link" href="https://leetcode.com/problems/coin-change-ii/">518</a></td></tr>
+    <tr><td>5</td><td>Combination Sum IV</td><td><span class="badge medium">Medium</span></td><td>Unbounded permutations</td><td><a class="lc-link" href="https://leetcode.com/problems/combination-sum-iv/">377</a></td></tr>
+    <tr><td>6</td><td>Perfect Squares</td><td><span class="badge medium">Medium</span></td><td>Unbounded min</td><td><a class="lc-link" href="https://leetcode.com/problems/perfect-squares/">279</a></td></tr>
+    <tr><td>7</td><td>Last Stone Weight II</td><td><span class="badge medium">Medium</span></td><td>0/1 min-diff</td><td><a class="lc-link" href="https://leetcode.com/problems/last-stone-weight-ii/">1049</a></td></tr>
+    <tr><td>8</td><td>Ones and Zeroes</td><td><span class="badge medium">Medium</span></td><td>2D Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/ones-and-zeroes/">474</a></td></tr>
+    <tr><td>9</td><td>Profitable Schemes</td><td><span class="badge hard">Hard</span></td><td>3D Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/profitable-schemes/">879</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 5 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s5"><span class="section-num">5.</span> Subsequence DP</h2>
+
+<h3>Longest Increasing Subsequence (LIS)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># O(n²) DP</span>
+<span class="kw">def</span> <span class="fn">lis_dp</span>(nums):
+    n = <span class="bi">len</span>(nums)
+    dp = [<span class="num">1</span>] * n  <span class="cmt"># dp[i] = length of LIS ending at i</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(i):
+            <span class="kw">if</span> nums[j] &lt; nums[i]:
+                dp[i] = <span class="bi">max</span>(dp[i], dp[j] + <span class="num">1</span>)
+    <span class="kw">return</span> <span class="bi">max</span>(dp)
+
+<span class="cmt"># O(n log n) Binary Search (Patience Sorting)</span>
+<span class="kw">import</span> bisect
+<span class="kw">def</span> <span class="fn">lis_fast</span>(nums):
+    tails = []  <span class="cmt"># tails[i] = smallest tail of IS of length i+1</span>
+    <span class="kw">for</span> num <span class="kw">in</span> nums:
+        pos = bisect.<span class="fn">bisect_left</span>(tails, num)
+        <span class="kw">if</span> pos == <span class="bi">len</span>(tails):
+            tails.<span class="fn">append</span>(num)
+        <span class="kw">else</span>:
+            tails[pos] = num
+    <span class="kw">return</span> <span class="bi">len</span>(tails)</code></pre>
+
+<h3>Longest Common Subsequence (LCS)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = LCS length of s1[0..i-1] and s2[0..j-1]</span>
+<span class="kw">def</span> <span class="fn">lcs</span>(s1, s2):
+    m, n = <span class="bi">len</span>(s1), <span class="bi">len</span>(s2)
+    dp = [[<span class="num">0</span>] * (n + <span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m + <span class="num">1</span>)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+            <span class="kw">if</span> s1[i-<span class="num">1</span>] == s2[j-<span class="num">1</span>]:
+                dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>] + <span class="num">1</span>
+            <span class="kw">else</span>:
+                dp[i][j] = <span class="bi">max</span>(dp[i-<span class="num">1</span>][j], dp[i][j-<span class="num">1</span>])
+    <span class="kw">return</span> dp[m][n]</code></pre>
+
+<h3>Longest Common Substring</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = length of common substring ending at s1[i-1], s2[j-1]</span>
+<span class="kw">def</span> <span class="fn">longest_common_substring</span>(s1, s2):
+    m, n = <span class="bi">len</span>(s1), <span class="bi">len</span>(s2)
+    dp = [[<span class="num">0</span>] * (n + <span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m + <span class="num">1</span>)]
+    result = <span class="num">0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+            <span class="kw">if</span> s1[i-<span class="num">1</span>] == s2[j-<span class="num">1</span>]:
+                dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>] + <span class="num">1</span>
+                result = <span class="bi">max</span>(result, dp[i][j])
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Problems — Subsequence DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Longest Increasing Subsequence</td><td><span class="badge medium">Medium</span></td><td>LIS</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-subsequence/">300</a></td></tr>
+    <tr><td>2</td><td>Longest Common Subsequence</td><td><span class="badge medium">Medium</span></td><td>LCS</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-common-subsequence/">1143</a></td></tr>
+    <tr><td>3</td><td>Number of LIS</td><td><span class="badge medium">Medium</span></td><td>LIS counting</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-longest-increasing-subsequence/">673</a></td></tr>
+    <tr><td>4</td><td>Russian Doll Envelopes</td><td><span class="badge hard">Hard</span></td><td>2D LIS</td><td><a class="lc-link" href="https://leetcode.com/problems/russian-doll-envelopes/">354</a></td></tr>
+    <tr><td>5</td><td>Increasing Triplet Subsequence</td><td><span class="badge medium">Medium</span></td><td>LIS variant</td><td><a class="lc-link" href="https://leetcode.com/problems/increasing-triplet-subsequence/">334</a></td></tr>
+    <tr><td>6</td><td>Delete Operation for Two Strings</td><td><span class="badge medium">Medium</span></td><td>LCS variant</td><td><a class="lc-link" href="https://leetcode.com/problems/delete-operation-for-two-strings/">583</a></td></tr>
+    <tr><td>7</td><td>Distinct Subsequences</td><td><span class="badge hard">Hard</span></td><td>Counting subsequences</td><td><a class="lc-link" href="https://leetcode.com/problems/distinct-subsequences/">115</a></td></tr>
+    <tr><td>8</td><td>Longest Palindromic Subsequence</td><td><span class="badge medium">Medium</span></td><td>LCS with reverse</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-palindromic-subsequence/">516</a></td></tr>
+    <tr><td>9</td><td>Min Insertions to Make Palindrome</td><td><span class="badge hard">Hard</span></td><td>LPS variant</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-insertion-steps-to-make-a-string-palindrome/">1312</a></td></tr>
+    <tr><td>10</td><td>Longest String Chain</td><td><span class="badge medium">Medium</span></td><td>LIS on strings</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-string-chain/">1048</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 6 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s6"><span class="section-num">6.</span> String DP</h2>
+
+<h3>Edit Distance (Levenshtein)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = min edits to convert word1[0..i-1] → word2[0..j-1]</span>
+<span class="kw">def</span> <span class="fn">min_distance</span>(word1, word2):
+    m, n = <span class="bi">len</span>(word1), <span class="bi">len</span>(word2)
+    dp = [[<span class="num">0</span>] * (n + <span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m + <span class="num">1</span>)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(m + <span class="num">1</span>): dp[i][<span class="num">0</span>] = i
+    <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(n + <span class="num">1</span>): dp[<span class="num">0</span>][j] = j
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+            <span class="kw">if</span> word1[i-<span class="num">1</span>] == word2[j-<span class="num">1</span>]:
+                dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>]
+            <span class="kw">else</span>:
+                dp[i][j] = <span class="num">1</span> + <span class="bi">min</span>(
+                    dp[i-<span class="num">1</span>][j],     <span class="cmt"># delete</span>
+                    dp[i][j-<span class="num">1</span>],     <span class="cmt"># insert</span>
+                    dp[i-<span class="num">1</span>][j-<span class="num">1</span>]   <span class="cmt"># replace</span>
+                )
+    <span class="kw">return</span> dp[m][n]</code></pre>
+
+<h3>Longest Palindromic Substring</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Expand-around-center: O(n²) time, O(1) space</span>
+<span class="kw">def</span> <span class="fn">longest_palindrome</span>(s):
+    <span class="kw">def</span> <span class="fn">expand</span>(l, r):
+        <span class="kw">while</span> l &gt;= <span class="num">0</span> <span class="kw">and</span> r &lt; <span class="bi">len</span>(s) <span class="kw">and</span> s[l] == s[r]:
+            l -= <span class="num">1</span>; r += <span class="num">1</span>
+        <span class="kw">return</span> s[l+<span class="num">1</span>:r]
+
+    result = <span class="str">""</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(s)):
+        <span class="kw">for</span> p <span class="kw">in</span> [<span class="fn">expand</span>(i, i), <span class="fn">expand</span>(i, i+<span class="num">1</span>)]:
+            <span class="kw">if</span> <span class="bi">len</span>(p) &gt; <span class="bi">len</span>(result):
+                result = p
+    <span class="kw">return</span> result</code></pre>
+
+<h3>Palindromic Substrings Count</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">count_palindromes</span>(s):
+    count = <span class="num">0</span>
+    <span class="kw">def</span> <span class="fn">expand</span>(l, r):
+        <span class="kw">nonlocal</span> count
+        <span class="kw">while</span> l &gt;= <span class="num">0</span> <span class="kw">and</span> r &lt; <span class="bi">len</span>(s) <span class="kw">and</span> s[l] == s[r]:
+            count += <span class="num">1</span>; l -= <span class="num">1</span>; r += <span class="num">1</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="bi">len</span>(s)):
+        <span class="fn">expand</span>(i, i)
+        <span class="fn">expand</span>(i, i + <span class="num">1</span>)
+    <span class="kw">return</span> count</code></pre>
+
+<h3>Wildcard / Regex Matching</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = does s[0..i-1] match p[0..j-1]?</span>
+<span class="kw">def</span> <span class="fn">is_match_wildcard</span>(s, p):
+    m, n = <span class="bi">len</span>(s), <span class="bi">len</span>(p)
+    dp = [[<span class="bi">False</span>] * (n + <span class="num">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m + <span class="num">1</span>)]
+    dp[<span class="num">0</span>][<span class="num">0</span>] = <span class="bi">True</span>
+    <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+        <span class="kw">if</span> p[j-<span class="num">1</span>] == <span class="str">'*'</span>:
+            dp[<span class="num">0</span>][j] = dp[<span class="num">0</span>][j-<span class="num">1</span>]
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+            <span class="kw">if</span> p[j-<span class="num">1</span>] == <span class="str">'*'</span>:
+                dp[i][j] = dp[i-<span class="num">1</span>][j] <span class="kw">or</span> dp[i][j-<span class="num">1</span>]
+            <span class="kw">elif</span> p[j-<span class="num">1</span>] == <span class="str">'?'</span> <span class="kw">or</span> s[i-<span class="num">1</span>] == p[j-<span class="num">1</span>]:
+                dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>]
+    <span class="kw">return</span> dp[m][n]</code></pre>
+
+<h3>Problems — String DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Edit Distance</td><td><span class="badge medium">Medium</span></td><td>Two-string DP</td><td><a class="lc-link" href="https://leetcode.com/problems/edit-distance/">72</a></td></tr>
+    <tr><td>2</td><td>Longest Palindromic Substring</td><td><span class="badge medium">Medium</span></td><td>Expand / DP</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-palindromic-substring/">5</a></td></tr>
+    <tr><td>3</td><td>Palindromic Substrings</td><td><span class="badge medium">Medium</span></td><td>Expand</td><td><a class="lc-link" href="https://leetcode.com/problems/palindromic-substrings/">647</a></td></tr>
+    <tr><td>4</td><td>Regular Expression Matching</td><td><span class="badge hard">Hard</span></td><td>Two-string DP</td><td><a class="lc-link" href="https://leetcode.com/problems/regular-expression-matching/">10</a></td></tr>
+    <tr><td>5</td><td>Wildcard Matching</td><td><span class="badge hard">Hard</span></td><td>Two-string DP</td><td><a class="lc-link" href="https://leetcode.com/problems/wildcard-matching/">44</a></td></tr>
+    <tr><td>6</td><td>Interleaving String</td><td><span class="badge medium">Medium</span></td><td>Two-pointer DP</td><td><a class="lc-link" href="https://leetcode.com/problems/interleaving-string/">97</a></td></tr>
+    <tr><td>7</td><td>Word Break</td><td><span class="badge medium">Medium</span></td><td>1D boolean DP</td><td><a class="lc-link" href="https://leetcode.com/problems/word-break/">139</a></td></tr>
+    <tr><td>8</td><td>Word Break II</td><td><span class="badge hard">Hard</span></td><td>DP + Backtrack</td><td><a class="lc-link" href="https://leetcode.com/problems/word-break-ii/">140</a></td></tr>
+    <tr><td>9</td><td>Palindrome Partitioning II</td><td><span class="badge hard">Hard</span></td><td>Min cuts</td><td><a class="lc-link" href="https://leetcode.com/problems/palindrome-partitioning-ii/">132</a></td></tr>
+    <tr><td>10</td><td>Shortest Common Supersequence</td><td><span class="badge hard">Hard</span></td><td>LCS + reconstruct</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-common-supersequence/">1092</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 7 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s7"><span class="section-num">7.</span> Partition / MCM DP</h2>
+
+<h3>Pattern: Split array/string at every possible point k, solve left &amp; right, combine</h3>
+
+<h3>Matrix Chain Multiplication (MCM)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = min cost to multiply matrices i..j</span>
+<span class="kw">def</span> <span class="fn">mcm</span>(dims):
+    n = <span class="bi">len</span>(dims) - <span class="num">1</span>  <span class="cmt"># number of matrices</span>
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):  <span class="cmt"># chain length</span>
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n - length + <span class="num">1</span>):
+            j = i + length - <span class="num">1</span>
+            dp[i][j] = <span class="bi">float</span>(<span class="str">'inf'</span>)
+            <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(i, j):
+                cost = dp[i][k] + dp[k+<span class="num">1</span>][j] + dims[i] * dims[k+<span class="num">1</span>] * dims[j+<span class="num">1</span>]
+                dp[i][j] = <span class="bi">min</span>(dp[i][j], cost)
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][n-<span class="num">1</span>]</code></pre>
+
+<h3>Burst Balloons</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = max coins from bursting all balloons in (i, j) exclusive</span>
+<span class="kw">def</span> <span class="fn">max_coins</span>(nums):
+    nums = [<span class="num">1</span>] + nums + [<span class="num">1</span>]
+    n = <span class="bi">len</span>(nums)
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n):
+        <span class="kw">for</span> left <span class="kw">in</span> <span class="bi">range</span>(n - length):
+            right = left + length
+            <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(left + <span class="num">1</span>, right):  <span class="cmt"># k = last to burst</span>
+                dp[left][right] = <span class="bi">max</span>(
+                    dp[left][right],
+                    dp[left][k] + dp[k][right] +
+                    nums[left] * nums[k] * nums[right]
+                )
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][n-<span class="num">1</span>]</code></pre>
+
+<h3>Minimum Cost to Cut a Stick</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">min_cost</span>(n, cuts):
+    cuts = <span class="bi">sorted</span>([<span class="num">0</span>] + cuts + [n])
+    m = <span class="bi">len</span>(cuts)
+    dp = [[<span class="num">0</span>] * m <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(m)]
+
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, m):
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(m - length):
+            j = i + length
+            dp[i][j] = <span class="bi">float</span>(<span class="str">'inf'</span>)
+            <span class="kw">for</span> k <span class="kw">in</span> <span class="bi">range</span>(i + <span class="num">1</span>, j):
+                dp[i][j] = <span class="bi">min</span>(dp[i][j],
+                    dp[i][k] + dp[k][j] + cuts[j] - cuts[i])
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][m-<span class="num">1</span>]</code></pre>
+
+<h3>Problems — Partition / MCM DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Burst Balloons</td><td><span class="badge hard">Hard</span></td><td>Interval partition</td><td><a class="lc-link" href="https://leetcode.com/problems/burst-balloons/">312</a></td></tr>
+    <tr><td>2</td><td>Minimum Cost to Cut a Stick</td><td><span class="badge hard">Hard</span></td><td>Interval partition</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-to-cut-a-stick/">1547</a></td></tr>
+    <tr><td>3</td><td>Palindrome Partitioning II</td><td><span class="badge hard">Hard</span></td><td>Min cuts</td><td><a class="lc-link" href="https://leetcode.com/problems/palindrome-partitioning-ii/">132</a></td></tr>
+    <tr><td>4</td><td>Partition Array for Maximum Sum</td><td><span class="badge medium">Medium</span></td><td>Partition DP</td><td><a class="lc-link" href="https://leetcode.com/problems/partition-array-for-maximum-sum/">1043</a></td></tr>
+    <tr><td>5</td><td>Minimum Score Triangulation</td><td><span class="badge medium">Medium</span></td><td>MCM variant</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-score-triangulation-of-polygon/">1039</a></td></tr>
+    <tr><td>6</td><td>Strange Printer</td><td><span class="badge hard">Hard</span></td><td>Interval DP</td><td><a class="lc-link" href="https://leetcode.com/problems/strange-printer/">664</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 8 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s8"><span class="section-num">8.</span> Interval DP</h2>
+
+<h3>Pattern: dp[i][j] = answer for the subarray/substring from index i to j</h3>
+<div class="note"><strong>Iteration:</strong> Always iterate by <strong>length</strong> (short → long). For each length, iterate over all starting indices.</div>
+
+<h3>Longest Palindromic Subsequence (Interval DP approach)</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">lps</span>(s):
+    n = <span class="bi">len</span>(s)
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        dp[i][i] = <span class="num">1</span>
+
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n - length + <span class="num">1</span>):
+            j = i + length - <span class="num">1</span>
+            <span class="kw">if</span> s[i] == s[j]:
+                dp[i][j] = dp[i+<span class="num">1</span>][j-<span class="num">1</span>] + <span class="num">2</span>
+            <span class="kw">else</span>:
+                dp[i][j] = <span class="bi">max</span>(dp[i+<span class="num">1</span>][j], dp[i][j-<span class="num">1</span>])
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][n-<span class="num">1</span>]</code></pre>
+
+<h3>Stone Game</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = max score difference (current player - opponent) for piles[i..j]</span>
+<span class="kw">def</span> <span class="fn">stone_game</span>(piles):
+    n = <span class="bi">len</span>(piles)
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        dp[i][i] = piles[i]
+
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n - length + <span class="num">1</span>):
+            j = i + length - <span class="num">1</span>
+            dp[i][j] = <span class="bi">max</span>(piles[i] - dp[i+<span class="num">1</span>][j],
+                            piles[j] - dp[i][j-<span class="num">1</span>])
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][n-<span class="num">1</span>] &gt; <span class="num">0</span></code></pre>
+
+<h3>Problems — Interval DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Longest Palindromic Subsequence</td><td><span class="badge medium">Medium</span></td><td>Interval</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-palindromic-subsequence/">516</a></td></tr>
+    <tr><td>2</td><td>Stone Game</td><td><span class="badge medium">Medium</span></td><td>Interval game</td><td><a class="lc-link" href="https://leetcode.com/problems/stone-game/">877</a></td></tr>
+    <tr><td>3</td><td>Burst Balloons</td><td><span class="badge hard">Hard</span></td><td>Interval</td><td><a class="lc-link" href="https://leetcode.com/problems/burst-balloons/">312</a></td></tr>
+    <tr><td>4</td><td>Minimum Cost Tree From Leaf Values</td><td><span class="badge medium">Medium</span></td><td>Interval/Stack</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-cost-tree-from-leaf-values/">1130</a></td></tr>
+    <tr><td>5</td><td>Remove Boxes</td><td><span class="badge hard">Hard</span></td><td>3D interval</td><td><a class="lc-link" href="https://leetcode.com/problems/remove-boxes/">546</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 9 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s9"><span class="section-num">9.</span> State Machine DP</h2>
+
+<h3>Pattern: Track discrete states (e.g., holding / not holding stock; cooldown)</h3>
+
+<h3>Best Time to Buy and Sell Stock (All Variants)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># General framework for stock problems:</span>
+<span class="cmt"># dp[i][k][0] = max profit on day i, with k transactions left, NOT holding</span>
+<span class="cmt"># dp[i][k][1] = max profit on day i, with k transactions left, HOLDING</span>
+
+<span class="cmt"># ─── At most K transactions (LC 188) ───</span>
+<span class="kw">def</span> <span class="fn">max_profit_k</span>(k, prices):
+    <span class="kw">if</span> <span class="kw">not</span> prices:
+        <span class="kw">return</span> <span class="num">0</span>
+    n = <span class="bi">len</span>(prices)
+    <span class="kw">if</span> k &gt;= n // <span class="num">2</span>:  <span class="cmt"># unlimited transactions</span>
+        <span class="kw">return</span> <span class="bi">sum</span>(<span class="bi">max</span>(<span class="num">0</span>, prices[i+<span class="num">1</span>] - prices[i]) <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n-<span class="num">1</span>))
+
+    dp = [[[<span class="num">0</span>] * <span class="num">2</span> <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(k+<span class="num">1</span>)] <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+    <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(k+<span class="num">1</span>):
+        dp[<span class="num">0</span>][j][<span class="num">1</span>] = -prices[<span class="num">0</span>]
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, k+<span class="num">1</span>):
+            dp[i][j][<span class="num">0</span>] = <span class="bi">max</span>(dp[i-<span class="num">1</span>][j][<span class="num">0</span>], dp[i-<span class="num">1</span>][j][<span class="num">1</span>] + prices[i])
+            dp[i][j][<span class="num">1</span>] = <span class="bi">max</span>(dp[i-<span class="num">1</span>][j][<span class="num">1</span>], dp[i-<span class="num">1</span>][j-<span class="num">1</span>][<span class="num">0</span>] - prices[i])
+
+    <span class="kw">return</span> dp[n-<span class="num">1</span>][k][<span class="num">0</span>]</code></pre>
+
+<h3>Stock with Cooldown</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># States: hold, sold (cooldown next day), rest</span>
+<span class="kw">def</span> <span class="fn">max_profit_cooldown</span>(prices):
+    hold, sold, rest = -<span class="bi">float</span>(<span class="str">'inf'</span>), <span class="num">0</span>, <span class="num">0</span>
+    <span class="kw">for</span> p <span class="kw">in</span> prices:
+        prev_hold = hold
+        hold = <span class="bi">max</span>(hold, rest - p)       <span class="cmt"># buy (can only buy after rest)</span>
+        rest = <span class="bi">max</span>(rest, sold)            <span class="cmt"># do nothing</span>
+        sold = prev_hold + p              <span class="cmt"># sell</span>
+    <span class="kw">return</span> <span class="bi">max</span>(sold, rest)</code></pre>
+
+<h3>Stock with Transaction Fee</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">max_profit_fee</span>(prices, fee):
+    hold, cash = -prices[<span class="num">0</span>], <span class="num">0</span>
+    <span class="kw">for</span> p <span class="kw">in</span> prices[<span class="num">1</span>:]:
+        hold = <span class="bi">max</span>(hold, cash - p)
+        cash = <span class="bi">max</span>(cash, hold + p - fee)
+    <span class="kw">return</span> cash</code></pre>
+
+<h3>Problems — State Machine DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>States</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Best Time to Buy and Sell Stock</td><td><span class="badge easy">Easy</span></td><td>1 transaction</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock/">121</a></td></tr>
+    <tr><td>2</td><td>Best Time to Buy and Sell Stock II</td><td><span class="badge medium">Medium</span></td><td>Unlimited</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/">122</a></td></tr>
+    <tr><td>3</td><td>Best Time to Buy and Sell Stock III</td><td><span class="badge hard">Hard</span></td><td>2 transactions</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/">123</a></td></tr>
+    <tr><td>4</td><td>Best Time to Buy and Sell Stock IV</td><td><span class="badge hard">Hard</span></td><td>K transactions</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iv/">188</a></td></tr>
+    <tr><td>5</td><td>Best Time with Cooldown</td><td><span class="badge medium">Medium</span></td><td>hold/sold/rest</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-cooldown/">309</a></td></tr>
+    <tr><td>6</td><td>Best Time with Transaction Fee</td><td><span class="badge medium">Medium</span></td><td>hold/cash</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/">714</a></td></tr>
+    <tr><td>7</td><td>Paint House</td><td><span class="badge medium">Medium</span></td><td>Color states</td><td>256</td></tr>
+    <tr><td>8</td><td>Paint House II</td><td><span class="badge hard">Hard</span></td><td>K color states</td><td>265</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 10 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s10"><span class="section-num">10.</span> Bitmask DP</h2>
+
+<h3>Pattern: Use a bitmask integer to represent which items have been selected/visited</h3>
+
+<div class="note"><strong>When:</strong> n ≤ 20 (since 2²⁰ ≈ 10⁶ states). Common for assignment, TSP, and permutation problems.</div>
+
+<h3>TSP — Travelling Salesman Problem</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[mask][i] = min cost to visit cities in mask, ending at city i</span>
+<span class="kw">def</span> <span class="fn">tsp</span>(dist, n):
+    INF = <span class="bi">float</span>(<span class="str">'inf'</span>)
+    dp = [[INF] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span> &lt;&lt; n)]
+    dp[<span class="num">1</span>][<span class="num">0</span>] = <span class="num">0</span>  <span class="cmt"># start at city 0</span>
+
+    <span class="kw">for</span> mask <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span> &lt;&lt; n):
+        <span class="kw">for</span> u <span class="kw">in</span> <span class="bi">range</span>(n):
+            <span class="kw">if</span> dp[mask][u] == INF:
+                <span class="kw">continue</span>
+            <span class="kw">if</span> <span class="kw">not</span> (mask &gt;&gt; u) &amp; <span class="num">1</span>:
+                <span class="kw">continue</span>
+            <span class="kw">for</span> v <span class="kw">in</span> <span class="bi">range</span>(n):
+                <span class="kw">if</span> (mask &gt;&gt; v) &amp; <span class="num">1</span>:
+                    <span class="kw">continue</span>
+                new_mask = mask | (<span class="num">1</span> &lt;&lt; v)
+                dp[new_mask][v] = <span class="bi">min</span>(dp[new_mask][v],
+                                       dp[mask][u] + dist[u][v])
+
+    full = (<span class="num">1</span> &lt;&lt; n) - <span class="num">1</span>
+    <span class="kw">return</span> <span class="bi">min</span>(dp[full][i] + dist[i][<span class="num">0</span>] <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n))</code></pre>
+
+<h3>Minimum Cost to Assign Tasks</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># n workers, n tasks. cost[i][j] = cost for worker i to do task j</span>
+<span class="cmt"># dp[mask] = min cost to complete tasks in mask</span>
+<span class="kw">def</span> <span class="fn">assign_tasks</span>(cost, n):
+    dp = [<span class="bi">float</span>(<span class="str">'inf'</span>)] * (<span class="num">1</span> &lt;&lt; n)
+    dp[<span class="num">0</span>] = <span class="num">0</span>
+
+    <span class="kw">for</span> mask <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span> &lt;&lt; n):
+        worker = <span class="bi">bin</span>(mask).<span class="fn">count</span>(<span class="str">'1'</span>)  <span class="cmt"># which worker is next</span>
+        <span class="kw">if</span> worker &gt;= n:
+            <span class="kw">continue</span>
+        <span class="kw">for</span> task <span class="kw">in</span> <span class="bi">range</span>(n):
+            <span class="kw">if</span> <span class="kw">not</span> (mask &gt;&gt; task) &amp; <span class="num">1</span>:
+                new_mask = mask | (<span class="num">1</span> &lt;&lt; task)
+                dp[new_mask] = <span class="bi">min</span>(dp[new_mask],
+                                    dp[mask] + cost[worker][task])
+
+    <span class="kw">return</span> dp[(<span class="num">1</span> &lt;&lt; n) - <span class="num">1</span>]</code></pre>
+
+<h3>Problems — Bitmask DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Shortest Path Visiting All Nodes</td><td><span class="badge hard">Hard</span></td><td>BFS + bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-path-visiting-all-nodes/">847</a></td></tr>
+    <tr><td>2</td><td>Partition to K Equal Sum Subsets</td><td><span class="badge medium">Medium</span></td><td>Subset bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/partition-to-k-equal-sum-subsets/">698</a></td></tr>
+    <tr><td>3</td><td>Can I Win</td><td><span class="badge medium">Medium</span></td><td>Game + bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/can-i-win/">464</a></td></tr>
+    <tr><td>4</td><td>Maximum Students Taking Exam</td><td><span class="badge hard">Hard</span></td><td>Row bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-students-taking-exam/">1349</a></td></tr>
+    <tr><td>5</td><td>Parallel Courses II</td><td><span class="badge hard">Hard</span></td><td>Subset enumeration</td><td><a class="lc-link" href="https://leetcode.com/problems/parallel-courses-ii/">1494</a></td></tr>
+    <tr><td>6</td><td>Minimum Number of Work Sessions</td><td><span class="badge medium">Medium</span></td><td>Bitmask DP</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-number-of-work-sessions-to-finish-the-tasks/">1986</a></td></tr>
+    <tr><td>7</td><td>Find the Shortest Superstring</td><td><span class="badge hard">Hard</span></td><td>TSP variant</td><td><a class="lc-link" href="https://leetcode.com/problems/find-the-shortest-superstring/">943</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 11 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s11"><span class="section-num">11.</span> Digit DP</h2>
+
+<h3>Pattern: Count numbers in [0, N] satisfying some digit property</h3>
+
+<div class="note"><strong>State:</strong> <code>dp(pos, tight, started, ...extra)</code>
+<br>• <code>pos</code> = current digit position
+<br>• <code>tight</code> = are we still bounded by N?
+<br>• <code>started</code> = have we placed a non-zero digit yet? (handles leading zeros)
+<br>• Extra state depends on the constraint (digit sum, last digit, etc.)</div>
+
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Template: count numbers in [1, n] with no two adjacent equal digits</span>
+<span class="kw">def</span> <span class="fn">count_special</span>(n):
+    digits = <span class="bi">str</span>(n)
+
+    <span class="bi">@lru_cache</span>(maxsize=<span class="bi">None</span>)
+    <span class="kw">def</span> <span class="fn">dp</span>(pos, tight, started, last_digit):
+        <span class="kw">if</span> pos == <span class="bi">len</span>(digits):
+            <span class="kw">return</span> <span class="num">1</span> <span class="kw">if</span> started <span class="kw">else</span> <span class="num">0</span>
+
+        limit = <span class="bi">int</span>(digits[pos]) <span class="kw">if</span> tight <span class="kw">else</span> <span class="num">9</span>
+        count = <span class="num">0</span>
+
+        <span class="kw">for</span> d <span class="kw">in</span> <span class="bi">range</span>(<span class="num">0</span>, limit + <span class="num">1</span>):
+            <span class="kw">if</span> started <span class="kw">and</span> d == last_digit:
+                <span class="kw">continue</span>  <span class="cmt"># skip adjacent equal</span>
+            count += <span class="fn">dp</span>(
+                pos + <span class="num">1</span>,
+                tight <span class="kw">and</span> d == limit,
+                started <span class="kw">or</span> d != <span class="num">0</span>,
+                d
+            )
+        <span class="kw">return</span> count
+
+    <span class="kw">return</span> <span class="fn">dp</span>(<span class="num">0</span>, <span class="bi">True</span>, <span class="bi">False</span>, -<span class="num">1</span>)</code></pre>
+
+<h3>Problems — Digit DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Numbers At Most N Given Digit Set</td><td><span class="badge hard">Hard</span></td><td>Digit DP</td><td><a class="lc-link" href="https://leetcode.com/problems/numbers-at-most-n-given-digit-set/">902</a></td></tr>
+    <tr><td>2</td><td>Count of Integers (digit sum range)</td><td><span class="badge hard">Hard</span></td><td>Digit DP</td><td><a class="lc-link" href="https://leetcode.com/problems/count-of-integers/">2719</a></td></tr>
+    <tr><td>3</td><td>Non-negative Integers without Consecutive Ones</td><td><span class="badge hard">Hard</span></td><td>Digit DP</td><td><a class="lc-link" href="https://leetcode.com/problems/non-negative-integers-without-consecutive-ones/">600</a></td></tr>
+    <tr><td>4</td><td>Number of Digit One</td><td><span class="badge hard">Hard</span></td><td>Digit counting</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-digit-one/">233</a></td></tr>
+    <tr><td>5</td><td>Count Special Integers</td><td><span class="badge hard">Hard</span></td><td>Digit DP + bitmask</td><td><a class="lc-link" href="https://leetcode.com/problems/count-special-integers/">2376</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 12 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s12"><span class="section-num">12.</span> Tree DP</h2>
+
+<h3>Pattern: DFS on a tree, compute dp values bottom-up from leaves</h3>
+
+<h3>Maximum Path Sum in Binary Tree</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">max_path_sum</span>(root):
+    result = [-<span class="bi">float</span>(<span class="str">'inf'</span>)]
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(node):
+        <span class="kw">if</span> <span class="kw">not</span> node:
+            <span class="kw">return</span> <span class="num">0</span>
+        left = <span class="bi">max</span>(<span class="num">0</span>, <span class="fn">dfs</span>(node.left))
+        right = <span class="bi">max</span>(<span class="num">0</span>, <span class="fn">dfs</span>(node.right))
+        result[<span class="num">0</span>] = <span class="bi">max</span>(result[<span class="num">0</span>], left + right + node.val)
+        <span class="kw">return</span> <span class="bi">max</span>(left, right) + node.val
+
+    <span class="fn">dfs</span>(root)
+    <span class="kw">return</span> result[<span class="num">0</span>]</code></pre>
+
+<h3>House Robber III (Tree)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Each node returns (rob_this, skip_this)</span>
+<span class="kw">def</span> <span class="fn">rob_tree</span>(root):
+    <span class="kw">def</span> <span class="fn">dfs</span>(node):
+        <span class="kw">if</span> <span class="kw">not</span> node:
+            <span class="kw">return</span> (<span class="num">0</span>, <span class="num">0</span>)
+        left = <span class="fn">dfs</span>(node.left)
+        right = <span class="fn">dfs</span>(node.right)
+        rob = node.val + left[<span class="num">1</span>] + right[<span class="num">1</span>]
+        skip = <span class="bi">max</span>(left) + <span class="bi">max</span>(right)
+        <span class="kw">return</span> (rob, skip)
+
+    <span class="kw">return</span> <span class="bi">max</span>(<span class="fn">dfs</span>(root))</code></pre>
+
+<h3>Diameter of Binary Tree</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">diameter</span>(root):
+    result = [<span class="num">0</span>]
+
+    <span class="kw">def</span> <span class="fn">depth</span>(node):
+        <span class="kw">if</span> <span class="kw">not</span> node:
+            <span class="kw">return</span> <span class="num">0</span>
+        left = <span class="fn">depth</span>(node.left)
+        right = <span class="fn">depth</span>(node.right)
+        result[<span class="num">0</span>] = <span class="bi">max</span>(result[<span class="num">0</span>], left + right)
+        <span class="kw">return</span> <span class="num">1</span> + <span class="bi">max</span>(left, right)
+
+    <span class="fn">depth</span>(root)
+    <span class="kw">return</span> result[<span class="num">0</span>]</code></pre>
+
+<h3>Problems — Tree DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Binary Tree Maximum Path Sum</td><td><span class="badge hard">Hard</span></td><td>Path DP</td><td><a class="lc-link" href="https://leetcode.com/problems/binary-tree-maximum-path-sum/">124</a></td></tr>
+    <tr><td>2</td><td>House Robber III</td><td><span class="badge medium">Medium</span></td><td>Rob/skip</td><td><a class="lc-link" href="https://leetcode.com/problems/house-robber-iii/">337</a></td></tr>
+    <tr><td>3</td><td>Diameter of Binary Tree</td><td><span class="badge easy">Easy</span></td><td>Height DP</td><td><a class="lc-link" href="https://leetcode.com/problems/diameter-of-binary-tree/">543</a></td></tr>
+    <tr><td>4</td><td>Longest ZigZag Path</td><td><span class="badge medium">Medium</span></td><td>Direction state</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-zigzag-path-in-a-binary-tree/">1372</a></td></tr>
+    <tr><td>5</td><td>Unique Binary Search Trees</td><td><span class="badge medium">Medium</span></td><td>Catalan / tree counting</td><td><a class="lc-link" href="https://leetcode.com/problems/unique-binary-search-trees/">96</a></td></tr>
+    <tr><td>6</td><td>Unique BST II</td><td><span class="badge medium">Medium</span></td><td>Generate trees</td><td><a class="lc-link" href="https://leetcode.com/problems/unique-binary-search-trees-ii/">95</a></td></tr>
+    <tr><td>7</td><td>Sum of Distances in Tree</td><td><span class="badge hard">Hard</span></td><td>Re-rooting DP</td><td><a class="lc-link" href="https://leetcode.com/problems/sum-of-distances-in-tree/">834</a></td></tr>
+    <tr><td>8</td><td>Camera in Binary Tree</td><td><span class="badge hard">Hard</span></td><td>3-state tree DP</td><td><a class="lc-link" href="https://leetcode.com/problems/binary-tree-cameras/">968</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 13 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s13"><span class="section-num">13.</span> DP on Graphs (DAG)</h2>
+
+<h3>Pattern: Topological sort + relaxation. Works because DAGs have no cycles.</h3>
+
+<h3>Longest Path in DAG</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">longest_path_dag</span>(graph, n):
+    <span class="cmt"># dp[u] = longest path starting from u</span>
+    dp = [-<span class="num">1</span>] * n
+
+    <span class="kw">def</span> <span class="fn">dfs</span>(u):
+        <span class="kw">if</span> dp[u] != -<span class="num">1</span>:
+            <span class="kw">return</span> dp[u]
+        dp[u] = <span class="num">0</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+            dp[u] = <span class="bi">max</span>(dp[u], <span class="fn">dfs</span>(v) + w)
+        <span class="kw">return</span> dp[u]
+
+    <span class="kw">return</span> <span class="bi">max</span>(<span class="fn">dfs</span>(u) <span class="kw">for</span> u <span class="kw">in</span> <span class="bi">range</span>(n))</code></pre>
+
+<h3>Number of Paths in DAG</h3>
+<pre><span class="lang-tag">python</span><code><span class="kw">def</span> <span class="fn">count_paths_dag</span>(graph, n, src, dst):
+    dp = [<span class="num">0</span>] * n
+    dp[dst] = <span class="num">1</span>
+
+    order = topo_sort(graph, n)  <span class="cmt"># reverse topo order</span>
+    <span class="kw">for</span> u <span class="kw">in</span> <span class="bi">reversed</span>(order):
+        <span class="kw">for</span> v <span class="kw">in</span> graph[u]:
+            dp[u] += dp[v]
+
+    <span class="kw">return</span> dp[src]</code></pre>
+
+<h3>Problems — DP on Graphs</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Longest Increasing Path in a Matrix</td><td><span class="badge hard">Hard</span></td><td>DFS + memo on grid DAG</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-path-in-a-matrix/">329</a></td></tr>
+    <tr><td>2</td><td>All Paths From Source to Target</td><td><span class="badge medium">Medium</span></td><td>DFS on DAG</td><td><a class="lc-link" href="https://leetcode.com/problems/all-paths-from-source-to-target/">797</a></td></tr>
+    <tr><td>3</td><td>Number of Restricted Paths</td><td><span class="badge medium">Medium</span></td><td>Dijkstra + DP</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-restricted-paths-from-first-to-last-node/">1786</a></td></tr>
+    <tr><td>4</td><td>Cheapest Flights Within K Stops</td><td><span class="badge medium">Medium</span></td><td>BFS/Bellman DP</td><td><a class="lc-link" href="https://leetcode.com/problems/cheapest-flights-within-k-stops/">787</a></td></tr>
+    <tr><td>5</td><td>Number of Ways to Arrive at Destination</td><td><span class="badge medium">Medium</span></td><td>Dijkstra + counting</td><td><a class="lc-link" href="https://leetcode.com/problems/number-of-ways-to-arrive-at-destination/">1976</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 14 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s14"><span class="section-num">14.</span> Game Theory DP</h2>
+
+<h3>Pattern: Two players alternate turns. dp[state] = best outcome for current player.</h3>
+
+<h3>Predict the Winner / Stone Game</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># dp[i][j] = max score advantage for current player from nums[i..j]</span>
+<span class="kw">def</span> <span class="fn">predict_winner</span>(nums):
+    n = <span class="bi">len</span>(nums)
+    dp = [[<span class="num">0</span>] * n <span class="kw">for</span> _ <span class="kw">in</span> <span class="bi">range</span>(n)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n):
+        dp[i][i] = nums[i]
+
+    <span class="kw">for</span> length <span class="kw">in</span> <span class="bi">range</span>(<span class="num">2</span>, n + <span class="num">1</span>):
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(n - length + <span class="num">1</span>):
+            j = i + length - <span class="num">1</span>
+            dp[i][j] = <span class="bi">max</span>(nums[i] - dp[i+<span class="num">1</span>][j],
+                            nums[j] - dp[i][j-<span class="num">1</span>])
+
+    <span class="kw">return</span> dp[<span class="num">0</span>][n-<span class="num">1</span>] &gt;= <span class="num">0</span></code></pre>
+
+<h3>Nim Game / Sprague-Grundy</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Nim: you lose if n % 4 == 0</span>
+<span class="kw">def</span> <span class="fn">can_win_nim</span>(n):
+    <span class="kw">return</span> n % <span class="num">4</span> != <span class="num">0</span>
+
+<span class="cmt"># General Sprague-Grundy</span>
+<span class="kw">def</span> <span class="fn">grundy</span>(n, moves):
+    <span class="cmt"># Compute Grundy number for position n</span>
+    g = [<span class="num">0</span>] * (n + <span class="num">1</span>)
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+        reachable = <span class="bi">set</span>()
+        <span class="kw">for</span> m <span class="kw">in</span> moves:
+            <span class="kw">if</span> i &gt;= m:
+                reachable.<span class="fn">add</span>(g[i - m])
+        <span class="cmt"># mex: minimum excludant</span>
+        mex = <span class="num">0</span>
+        <span class="kw">while</span> mex <span class="kw">in</span> reachable:
+            mex += <span class="num">1</span>
+        g[i] = mex
+    <span class="kw">return</span> g[n] != <span class="num">0</span>  <span class="cmt"># first player wins if Grundy != 0</span></code></pre>
+
+<h3>Problems — Game Theory DP</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Difficulty</th><th>Pattern</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Predict the Winner</td><td><span class="badge medium">Medium</span></td><td>Interval game</td><td><a class="lc-link" href="https://leetcode.com/problems/predict-the-winner/">486</a></td></tr>
+    <tr><td>2</td><td>Stone Game</td><td><span class="badge medium">Medium</span></td><td>Interval game</td><td><a class="lc-link" href="https://leetcode.com/problems/stone-game/">877</a></td></tr>
+    <tr><td>3</td><td>Stone Game II</td><td><span class="badge medium">Medium</span></td><td>Game DP</td><td><a class="lc-link" href="https://leetcode.com/problems/stone-game-ii/">1140</a></td></tr>
+    <tr><td>4</td><td>Stone Game III</td><td><span class="badge hard">Hard</span></td><td>Game DP</td><td><a class="lc-link" href="https://leetcode.com/problems/stone-game-iii/">1406</a></td></tr>
+    <tr><td>5</td><td>Nim Game</td><td><span class="badge easy">Easy</span></td><td>Math/Game</td><td><a class="lc-link" href="https://leetcode.com/problems/nim-game/">292</a></td></tr>
+    <tr><td>6</td><td>Can I Win</td><td><span class="badge medium">Medium</span></td><td>Bitmask game</td><td><a class="lc-link" href="https://leetcode.com/problems/can-i-win/">464</a></td></tr>
+    <tr><td>7</td><td>Divisor Game</td><td><span class="badge easy">Easy</span></td><td>Simple game DP</td><td><a class="lc-link" href="https://leetcode.com/problems/divisor-game/">1025</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 15 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s15"><span class="section-num">15.</span> DP Optimizations</h2>
+
+<h3>15a. Space Optimization (Rolling Array)</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># LCS with O(n) space instead of O(mn)</span>
+<span class="kw">def</span> <span class="fn">lcs_optimized</span>(s1, s2):
+    m, n = <span class="bi">len</span>(s1), <span class="bi">len</span>(s2)
+    prev = [<span class="num">0</span>] * (n + <span class="num">1</span>)
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, m + <span class="num">1</span>):
+        curr = [<span class="num">0</span>] * (n + <span class="num">1</span>)
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="bi">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+            <span class="kw">if</span> s1[i-<span class="num">1</span>] == s2[j-<span class="num">1</span>]:
+                curr[j] = prev[j-<span class="num">1</span>] + <span class="num">1</span>
+            <span class="kw">else</span>:
+                curr[j] = <span class="bi">max</span>(prev[j], curr[j-<span class="num">1</span>])
+        prev = curr
+    <span class="kw">return</span> prev[n]</code></pre>
+
+<h3>15b. Monotonic Stack / Deque Optimization</h3>
+<div class="note"><strong>When:</strong> DP recurrence involves <code>min/max over a sliding window</code>. Reduces O(nk) → O(n).</div>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># Sliding window maximum (useful as DP optimization building block)</span>
+<span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">max_sliding_window</span>(nums, k):
+    dq = deque()  <span class="cmt"># stores indices, front = max</span>
+    result = []
+    <span class="kw">for</span> i, num <span class="kw">in</span> <span class="bi">enumerate</span>(nums):
+        <span class="kw">while</span> dq <span class="kw">and</span> nums[dq[-<span class="num">1</span>]] &lt;= num:
+            dq.<span class="fn">pop</span>()
+        dq.<span class="fn">append</span>(i)
+        <span class="kw">if</span> dq[<span class="num">0</span>] &lt;= i - k:
+            dq.<span class="fn">popleft</span>()
+        <span class="kw">if</span> i &gt;= k - <span class="num">1</span>:
+            result.<span class="fn">append</span>(nums[dq[<span class="num">0</span>]])
+    <span class="kw">return</span> result</code></pre>
+
+<h3>15c. Prefix Sum Optimization</h3>
+<pre><span class="lang-tag">python</span><code><span class="cmt"># When dp[i] = min(dp[j] + cost(j+1, i)) and cost uses a range sum,</span>
+<span class="cmt"># precompute prefix sums to get cost in O(1).</span>
+<span class="cmt"># prefix[i] = sum(nums[0..i-1])</span>
+<span class="cmt"># sum(nums[l..r]) = prefix[r+1] - prefix[l]</span>
+prefix = [<span class="num">0</span>]
+<span class="kw">for</span> num <span class="kw">in</span> nums:
+    prefix.<span class="fn">append</span>(prefix[-<span class="num">1</span>] + num)</code></pre>
+
+<h3>15d. Convex Hull Trick (CHT)</h3>
+<div class="note"><strong>When:</strong> Recurrence has the form <code>dp[i] = min(dp[j] + a[i]*b[j])</code>. Reduces O(n²) → O(n log n) or O(n).</div>
+<p>Advanced technique — used in competitive programming for optimizing specific recurrence shapes.</p>
+
+<h3>15e. Divide &amp; Conquer Optimization</h3>
+<div class="note"><strong>When:</strong> dp[k][i] = min over j of (dp[k-1][j] + cost(j+1, i)) and the optimal split point is monotonic. Reduces O(kn²) → O(kn log n).</div>
+
+<h3>Optimization Cheat Sheet</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Technique</th><th>Reduces</th><th>Condition</th></tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">Rolling array</td><td>O(mn) → O(n) space</td><td>dp[i] depends only on dp[i-1]</td></tr>
+    <tr><td style="text-align:left">Monotonic deque</td><td>O(nk) → O(n)</td><td>Sliding window min/max</td></tr>
+    <tr><td style="text-align:left">Prefix sums</td><td>O(n) → O(1) range query</td><td>Range sum in cost function</td></tr>
+    <tr><td style="text-align:left">Convex Hull Trick</td><td>O(n²) → O(n log n)</td><td>dp[i] = min(dp[j] + a[i]*b[j])</td></tr>
+    <tr><td style="text-align:left">D&amp;C Optimization</td><td>O(kn²) → O(kn log n)</td><td>Monotone optimal split point</td></tr>
+    <tr><td style="text-align:left">Knuth's Optimization</td><td>O(n³) → O(n²)</td><td>Optimal split is monotone for MCM-type</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 16 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s16"><span class="section-num">16.</span> Master Problem List</h2>
+
+<h3>Easy (Start Here)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Climbing Stairs</td><td>Fibonacci</td><td><a class="lc-link" href="https://leetcode.com/problems/climbing-stairs/">70</a></td></tr>
+    <tr><td>2</td><td>Min Cost Climbing Stairs</td><td>Fibonacci variant</td><td><a class="lc-link" href="https://leetcode.com/problems/min-cost-climbing-stairs/">746</a></td></tr>
+    <tr><td>3</td><td>Best Time to Buy and Sell Stock</td><td>One pass</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock/">121</a></td></tr>
+    <tr><td>4</td><td>Maximum Subarray</td><td>Kadane's</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-subarray/">53</a></td></tr>
+    <tr><td>5</td><td>Counting Bits</td><td>Bit DP</td><td><a class="lc-link" href="https://leetcode.com/problems/counting-bits/">338</a></td></tr>
+    <tr><td>6</td><td>Fibonacci Number</td><td>Base DP</td><td><a class="lc-link" href="https://leetcode.com/problems/fibonacci-number/">509</a></td></tr>
+    <tr><td>7</td><td>Tribonacci Number</td><td>Base DP</td><td><a class="lc-link" href="https://leetcode.com/problems/n-th-tribonacci-number/">1137</a></td></tr>
+    <tr><td>8</td><td>Divisor Game</td><td>Game DP</td><td><a class="lc-link" href="https://leetcode.com/problems/divisor-game/">1025</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Medium (Core Practice — Do ALL of These)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>House Robber</td><td>Take/Skip</td><td><a class="lc-link" href="https://leetcode.com/problems/house-robber/">198</a></td></tr>
+    <tr><td>2</td><td>House Robber II</td><td>Circular</td><td><a class="lc-link" href="https://leetcode.com/problems/house-robber-ii/">213</a></td></tr>
+    <tr><td>3</td><td>Coin Change</td><td>Unbounded Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/coin-change/">322</a></td></tr>
+    <tr><td>4</td><td>Coin Change II</td><td>Counting</td><td><a class="lc-link" href="https://leetcode.com/problems/coin-change-ii/">518</a></td></tr>
+    <tr><td>5</td><td>Longest Increasing Subsequence</td><td>LIS</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-subsequence/">300</a></td></tr>
+    <tr><td>6</td><td>Longest Common Subsequence</td><td>LCS</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-common-subsequence/">1143</a></td></tr>
+    <tr><td>7</td><td>Word Break</td><td>String DP</td><td><a class="lc-link" href="https://leetcode.com/problems/word-break/">139</a></td></tr>
+    <tr><td>8</td><td>Unique Paths</td><td>Grid DP</td><td><a class="lc-link" href="https://leetcode.com/problems/unique-paths/">62</a></td></tr>
+    <tr><td>9</td><td>Decode Ways</td><td>1D counting</td><td><a class="lc-link" href="https://leetcode.com/problems/decode-ways/">91</a></td></tr>
+    <tr><td>10</td><td>Maximum Product Subarray</td><td>Track min/max</td><td><a class="lc-link" href="https://leetcode.com/problems/maximum-product-subarray/">152</a></td></tr>
+    <tr><td>11</td><td>Partition Equal Subset Sum</td><td>0/1 Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/partition-equal-subset-sum/">416</a></td></tr>
+    <tr><td>12</td><td>Target Sum</td><td>0/1 counting</td><td><a class="lc-link" href="https://leetcode.com/problems/target-sum/">494</a></td></tr>
+    <tr><td>13</td><td>Edit Distance</td><td>String DP</td><td><a class="lc-link" href="https://leetcode.com/problems/edit-distance/">72</a></td></tr>
+    <tr><td>14</td><td>Longest Palindromic Substring</td><td>Expand / DP</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-palindromic-substring/">5</a></td></tr>
+    <tr><td>15</td><td>Maximal Square</td><td>Grid DP</td><td><a class="lc-link" href="https://leetcode.com/problems/maximal-square/">221</a></td></tr>
+    <tr><td>16</td><td>Best Time Stock with Cooldown</td><td>State Machine</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-cooldown/">309</a></td></tr>
+    <tr><td>17</td><td>Interleaving String</td><td>Two-pointer DP</td><td><a class="lc-link" href="https://leetcode.com/problems/interleaving-string/">97</a></td></tr>
+    <tr><td>18</td><td>Longest Palindromic Subsequence</td><td>Interval DP</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-palindromic-subsequence/">516</a></td></tr>
+    <tr><td>19</td><td>Jump Game</td><td>Greedy/DP</td><td><a class="lc-link" href="https://leetcode.com/problems/jump-game/">55</a></td></tr>
+    <tr><td>20</td><td>Predict the Winner</td><td>Game DP</td><td><a class="lc-link" href="https://leetcode.com/problems/predict-the-winner/">486</a></td></tr>
+    <tr><td>21</td><td>Delete and Earn</td><td>House Robber variant</td><td><a class="lc-link" href="https://leetcode.com/problems/delete-and-earn/">740</a></td></tr>
+    <tr><td>22</td><td>Ones and Zeroes</td><td>2D Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/ones-and-zeroes/">474</a></td></tr>
+    <tr><td>23</td><td>Minimum Path Sum</td><td>Grid DP</td><td><a class="lc-link" href="https://leetcode.com/problems/minimum-path-sum/">64</a></td></tr>
+    <tr><td>24</td><td>Unique BSTs</td><td>Catalan DP</td><td><a class="lc-link" href="https://leetcode.com/problems/unique-binary-search-trees/">96</a></td></tr>
+    <tr><td>25</td><td>House Robber III</td><td>Tree DP</td><td><a class="lc-link" href="https://leetcode.com/problems/house-robber-iii/">337</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Hard (Target 10–15 of These)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Problem</th><th>Key Topic</th><th>LC</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Edit Distance</td><td>String DP</td><td><a class="lc-link" href="https://leetcode.com/problems/edit-distance/">72</a></td></tr>
+    <tr><td>2</td><td>Regular Expression Matching</td><td>String DP</td><td><a class="lc-link" href="https://leetcode.com/problems/regular-expression-matching/">10</a></td></tr>
+    <tr><td>3</td><td>Burst Balloons</td><td>Interval DP</td><td><a class="lc-link" href="https://leetcode.com/problems/burst-balloons/">312</a></td></tr>
+    <tr><td>4</td><td>Wildcard Matching</td><td>String DP</td><td><a class="lc-link" href="https://leetcode.com/problems/wildcard-matching/">44</a></td></tr>
+    <tr><td>5</td><td>Distinct Subsequences</td><td>Counting DP</td><td><a class="lc-link" href="https://leetcode.com/problems/distinct-subsequences/">115</a></td></tr>
+    <tr><td>6</td><td>Best Time Stock III</td><td>State Machine</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/">123</a></td></tr>
+    <tr><td>7</td><td>Best Time Stock IV</td><td>K transactions</td><td><a class="lc-link" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iv/">188</a></td></tr>
+    <tr><td>8</td><td>Russian Doll Envelopes</td><td>2D LIS</td><td><a class="lc-link" href="https://leetcode.com/problems/russian-doll-envelopes/">354</a></td></tr>
+    <tr><td>9</td><td>Palindrome Partitioning II</td><td>Min cuts</td><td><a class="lc-link" href="https://leetcode.com/problems/palindrome-partitioning-ii/">132</a></td></tr>
+    <tr><td>10</td><td>Binary Tree Maximum Path Sum</td><td>Tree DP</td><td><a class="lc-link" href="https://leetcode.com/problems/binary-tree-maximum-path-sum/">124</a></td></tr>
+    <tr><td>11</td><td>Longest Increasing Path in Matrix</td><td>DFS + memo</td><td><a class="lc-link" href="https://leetcode.com/problems/longest-increasing-path-in-a-matrix/">329</a></td></tr>
+    <tr><td>12</td><td>Cherry Pickup</td><td>Two-agent grid</td><td><a class="lc-link" href="https://leetcode.com/problems/cherry-pickup/">741</a></td></tr>
+    <tr><td>13</td><td>Dungeon Game</td><td>Reverse grid</td><td><a class="lc-link" href="https://leetcode.com/problems/dungeon-game/">174</a></td></tr>
+    <tr><td>14</td><td>Shortest Common Supersequence</td><td>LCS + reconstruct</td><td><a class="lc-link" href="https://leetcode.com/problems/shortest-common-supersequence/">1092</a></td></tr>
+    <tr><td>15</td><td>Profitable Schemes</td><td>3D Knapsack</td><td><a class="lc-link" href="https://leetcode.com/problems/profitable-schemes/">879</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Quick Reference -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="quick-ref"><span class="section-num">★</span> Quick Reference: Which DP Pattern?</h2>
+
+<div class="decision-tree"><span class="q">"Make a choice at each step (take/skip)"</span>
+<span class="branch">  ├── Linear array?          →</span> <span class="answer">1D DP (House Robber)</span>
+<span class="branch">  ├── Two choices per item?  →</span> <span class="answer">0/1 Knapsack</span>
+<span class="branch">  └── Unlimited reuse?       →</span> <span class="answer">Unbounded Knapsack</span>
+
+<span class="q">"Find optimal path in grid"</span>
+<span class="branch">  ├── Count paths?           →</span> <span class="answer">Grid DP (Unique Paths)</span>
+<span class="branch">  └── Min/max cost path?     →</span> <span class="answer">Grid DP (Min Path Sum)</span>
+
+<span class="q">"Compare two sequences"</span>
+<span class="branch">  ├── Common subsequence?    →</span> <span class="answer">LCS</span>
+<span class="branch">  ├── Transform one to other?→</span> <span class="answer">Edit Distance</span>
+<span class="branch">  └── Pattern matching?      →</span> <span class="answer">Wildcard / Regex DP</span>
+
+<span class="q">"Longest increasing/monotonic"</span>
+<span class="branch">  └──</span> <span class="answer">LIS (O(n²) DP or O(n log n) binary search)</span>
+
+<span class="q">"Palindrome related"</span>
+<span class="branch">  ├── Longest palindromic substring? →</span> <span class="answer">Expand around center</span>
+<span class="branch">  ├── Longest palindromic subseq?    →</span> <span class="answer">Interval DP / LCS(s, rev(s))</span>
+<span class="branch">  └── Min cuts for palindromes?      →</span> <span class="answer">Partition DP</span>
+
+<span class="q">"Split/partition array optimally"</span>
+<span class="branch">  └──</span> <span class="answer">MCM / Interval DP (try every split point)</span>
+
+<span class="q">"Buy/sell stock with constraints"</span>
+<span class="branch">  └──</span> <span class="answer">State Machine DP (hold/cash/cooldown states)</span>
+
+<span class="q">"Assign/visit all items (n ≤ 20)"</span>
+<span class="branch">  └──</span> <span class="answer">Bitmask DP</span>
+
+<span class="q">"Count numbers with digit property"</span>
+<span class="branch">  └──</span> <span class="answer">Digit DP</span>
+
+<span class="q">"Optimal play in two-player game"</span>
+<span class="branch">  └──</span> <span class="answer">Game Theory DP (minimax / interval)</span>
+
+<span class="q">"Tree structure"</span>
+<span class="branch">  └──</span> <span class="answer">Tree DP (DFS bottom-up, return tuple of states)</span></div>
+
+<!-- Footer -->
+<div class="footer">
+  <em>Total: 100+ curated problems covering every DP pattern you'll encounter in MAANG interviews.</em>
+</div>
+
+</main>
+</div>
+</body>
+</html>

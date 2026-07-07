@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temporal Data Structures — Unit 1</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="layout-dsa accent-purple">
+<div class="wrapper">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="back-nav"><a href="ADVANCED_DATA_STRUCTURES.html">← Back to ADS Syllabus</a></div>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Overview &amp; Motivation</a></li>
+    <li><a href="#s2">The Pointer Machine Model</a></li>
+    <li><a href="#s3">Partial Persistence</a></li>
+    <li><a href="#s4">Full Persistence</a></li>
+    <li><a href="#s5">Confluent Persistence</a></li>
+    <li><a href="#s6">Techniques: Fat Nodes</a></li>
+    <li><a href="#s7">Techniques: Path Copying</a></li>
+    <li><a href="#s8">The DSST Combination</a></li>
+    <li><a href="#s9">Persistent BST Example</a></li>
+    <li><a href="#s10">Retroactive Data Structures</a></li>
+    <li><a href="#s11">Partial Retroactivity</a></li>
+    <li><a href="#s12">Full Retroactivity</a></li>
+    <li><a href="#s13">Retroactive Priority Queue</a></li>
+    <li><a href="#s14">Persistence vs Retroactivity</a></li>
+    <li><a href="#s15">Applications</a></li>
+    <li><a href="#s16">Key Results &amp; References</a></li>
+  </ol>
+</nav>
+
+<!-- ── Main ── -->
+<main class="content">
+
+<header class="hero">
+  <h1>Temporal Data Structures</h1>
+  <p class="subtitle">Unit 1 — Persistent data structures, retroactive data structures, and the pointer machine model. 5 lectures.</p>
+</header>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 1 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s1"><span class="section-num">1.</span> Overview &amp; Motivation</h2>
+
+<h3>What are temporal data structures?</h3>
+<p>A <strong>temporal data structure</strong> is one that incorporates <em>time</em> as a first-class dimension. Instead of a single mutable state, the structure maintains information about its state across multiple points in time. This unlocks two powerful paradigms:</p>
+
+<div class="algo-compare">
+  <div class="algo-card">
+    <h4>Persistence</h4>
+    <p>Every version of the structure is preserved. You can query (and sometimes modify) any past version without destroying the current one.</p>
+  </div>
+  <div class="algo-card">
+    <h4>Retroactivity</h4>
+    <p>You can go back in time and <em>insert, delete, or modify</em> an operation that was performed in the past — and all subsequent states update accordingly.</p>
+  </div>
+</div>
+
+<h3>Why study them?</h3>
+<ul>
+  <li><strong>Version control for data:</strong> Git-like semantics for any data structure — branch, merge, query old snapshots.</li>
+  <li><strong>Computational geometry:</strong> Planar point location reduces to persistent balanced BSTs (Sarnak &amp; Tarjan, 1986).</li>
+  <li><strong>Functional programming:</strong> Immutable data structures in Haskell, Clojure, Scala are inherently persistent.</li>
+  <li><strong>Error correction:</strong> Retroactive structures let you fix a bad input in the past and propagate corrections forward.</li>
+  <li><strong>Undo/redo:</strong> Editors, databases, and simulations all benefit from temporal state management.</li>
+</ul>
+
+<h3>Levels of persistence</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Level</th><th>Query past?</th><th>Modify past?</th><th>Merge versions?</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Ephemeral</strong></td><td>No</td><td>No</td><td>No</td></tr>
+    <tr><td><strong>Partially persistent</strong></td><td>Yes (any version)</td><td>Only latest</td><td>No</td></tr>
+    <tr><td><strong>Fully persistent</strong></td><td>Yes (any version)</td><td>Yes (any version)</td><td>No</td></tr>
+    <tr><td><strong>Confluently persistent</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note tip"><strong>Key insight:</strong> Partial persistence implies a <em>linear</em> version history. Full persistence allows a <em>tree</em> of versions. Confluent persistence allows a <em>DAG</em>.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 2 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s2"><span class="section-num">2.</span> The Pointer Machine Model</h2>
+
+<h3>Definition</h3>
+<p>A <strong>pointer machine</strong> is an abstract computational model where the storage is a directed graph of nodes connected by labeled pointers. Unlike a RAM model, pointer machines have <em>no arithmetic on addresses</em> — computation proceeds only by following pointers, comparing nodes, and creating or redirecting edges.</p>
+
+<div class="note">
+  <strong>Formal definition:</strong> A pointer machine consists of:
+  <ul style="margin-top:8px;">
+    <li>A fixed alphabet Σ of labels</li>
+    <li>A mutable directed graph G where each node has exactly one outgoing edge per label</li>
+    <li>An "active" (start) node</li>
+    <li>Instructions: <code>new w</code>, <code>set w to v</code>, <code>if v = w then goto z</code></li>
+  </ul>
+</div>
+
+<h3>Why does this matter for persistence?</h3>
+<p>The persistence techniques of Driscoll, Sarnak, Sleator, and Tarjan (DSST, 1986) assume the <strong>pointer machine model</strong> with bounded in-degree <em>d</em>. This assumption is critical because:</p>
+<ul>
+  <li>Each node has at most <em>d</em> incoming pointers (where <em>d</em> is a known constant).</li>
+  <li>When a node is copied (for path copying), only <em>d</em> parent pointers need to be updated.</li>
+  <li>This bounds the cascading cost of modifications, enabling O(1) amortized overhead.</li>
+</ul>
+
+<h3>Variants</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Model</th><th>Key Property</th><th>Author</th></tr></thead>
+  <tbody>
+    <tr><td><strong>SMM</strong> (Storage Modification Machine)</td><td>Directed graph, labeled edges, mutable via <code>set</code></td><td>Schönhage (1980)</td></tr>
+    <tr><td><strong>KU-Machine</strong> (Kolmogorov–Uspenskii)</td><td>Undirected graph — pointers are invertible</td><td>Kolmogorov &amp; Uspenskii (1958)</td></tr>
+    <tr><td><strong>LISP Machines</strong></td><td>Cons cells with car/cdr pointers</td><td>Various</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note tip"><strong>Practical note:</strong> Real languages like C/C++ allow pointer arithmetic (RAM model), but many persistence techniques still work because we can simulate bounded in-degree by maintaining back-pointer lists.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 3 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s3"><span class="section-num">3.</span> Partial Persistence</h2>
+
+<h3>Definition</h3>
+<p>A data structure is <strong>partially persistent</strong> if:</p>
+<ul>
+  <li>All past versions can be <strong>queried</strong> (read-only access).</li>
+  <li>Only the <strong>latest</strong> version can be <strong>modified</strong> (updated).</li>
+</ul>
+<p>This creates a <strong>linear</strong> chain of versions: v₀ → v₁ → v₂ → … → vₙ (the current version).</p>
+
+<h3>Version numbering</h3>
+<p>Each modification increments a global version counter. Every field change is tagged with this version number. To answer a query at version <em>t</em>, we look up the value of each field that was current at time <em>t</em>.</p>
+
+<div class="diagram">
+<pre>
+Version:   v₀ ──→ v₁ ──→ v₂ ──→ v₃ ──→ v₄  (current)
+                    │              │
+                  query          query
+              (read-only)    (read-only)
+
+Only v₄ can be modified (write).
+</pre>
+<p class="diagram-caption">Linear version chain in partial persistence</p>
+</div>
+
+<h3>Complexity goal</h3>
+<p>The DSST result (1986) achieves partial persistence with:</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Operation</th><th>Overhead</th></tr></thead>
+  <tbody>
+    <tr><td>Access (any version)</td><td>O(log m) worst-case, where m = total modifications</td></tr>
+    <tr><td>Modification (latest only)</td><td>O(1) amortized time and space</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 4 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s4"><span class="section-num">4.</span> Full Persistence</h2>
+
+<h3>Definition</h3>
+<p>A data structure is <strong>fully persistent</strong> if:</p>
+<ul>
+  <li>All past versions can be <strong>queried</strong>.</li>
+  <li><strong>Any</strong> version can be <strong>modified</strong> — not just the latest.</li>
+</ul>
+<p>Modifying version vₖ creates a new version vₖ' that branches off from vₖ. The version history forms a <strong>tree</strong>.</p>
+
+<div class="diagram">
+<pre>
+         v₀ ──→ v₁ ──→ v₂ ──→ v₃
+                  │
+                  └──→ v₁' ──→ v₁''
+                         │
+                         └──→ v₁'''
+
+Each node can be both queried and used as
+a base for new modifications (branching).
+</pre>
+<p class="diagram-caption">Tree-shaped version history in full persistence</p>
+</div>
+
+<h3>Complexity goal</h3>
+<p>DSST (1986) achieve full persistence with:</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Operation</th><th>Overhead</th></tr></thead>
+  <tbody>
+    <tr><td>Access (any version)</td><td>O(log m) worst-case</td></tr>
+    <tr><td>Modification (any version)</td><td>O(1) amortized time and space</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note"><strong>Version ordering:</strong> In full persistence, versions are ordered by a <em>version tree</em> rather than a linear sequence. Navigating this tree requires an order-maintenance data structure that supports O(1) comparisons — typically Dietz &amp; Sleator's structure.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 5 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s5"><span class="section-num">5.</span> Confluent Persistence</h2>
+
+<h3>Definition</h3>
+<p>A data structure is <strong>confluently persistent</strong> if, in addition to full persistence, there exists a <strong>merge (meld)</strong> operation that combines two versions into a new version — and the result is itself fully persistent.</p>
+
+<div class="diagram">
+<pre>
+      v₀ ──→ v₁ ──→ v₂
+                       ╲
+                        ╲──→ v₅ (merged)
+                       ╱
+      v₀ ──→ v₃ ──→ v₄
+                         
+The version history becomes a DAG.
+</pre>
+<p class="diagram-caption">DAG-shaped version history in confluent persistence</p>
+</div>
+
+<h3>Why is this hard?</h3>
+<ul>
+  <li>Merging two trees can produce <strong>exponential blowup</strong> in shared structure if not handled carefully.</li>
+  <li>Frandsen et al. (2001) showed that confluent persistence on linked data structures is harder than partial or full persistence.</li>
+  <li>Confluently persistent sets and maps (Liljenzin, 2013) use treaps with expected O(log n) merge.</li>
+</ul>
+
+<div class="note tip"><strong>Real-world analogy:</strong> Git branches are confluently persistent — you can branch, modify independently, and merge. The DAG of commits mirrors confluent persistence exactly.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 6 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s6"><span class="section-num">6.</span> Techniques: Fat Nodes</h2>
+
+<h3>Idea</h3>
+<p>Record all changes to a node <em>inside the node itself</em>, without erasing old values. Each node becomes "fat" — it stores its original fields plus an arbitrary number of <strong>(version, field, value)</strong> triples.</p>
+
+<h3>How it works</h3>
+<ol>
+  <li>Each node stores its original field values (version 0).</li>
+  <li>When a field is modified at version <em>t</em>, a new entry <code>(t, field_name, new_value)</code> is appended to the node's modification list.</li>
+  <li>To read a field at version <em>t</em>, find the latest modification with timestamp ≤ <em>t</em>.</li>
+</ol>
+
+<div class="diagram">
+<pre>
+Node X:
+┌───────────────────────────────────────┐
+│ Original: left=A, right=B, key=5      │
+│ Modifications:                        │
+│   (v₃, left, C)     ← changed at v₃  │
+│   (v₇, key, 8)      ← changed at v₇  │
+│   (v₁₂, right, D)   ← changed at v₁₂ │
+└───────────────────────────────────────┘
+
+Query at v₅:  left=C (from v₃), right=B (original), key=5 (original)
+Query at v₁₀: left=C (from v₃), right=B (original), key=8 (from v₇)
+</pre>
+<p class="diagram-caption">Fat node storing a history of modifications</p>
+</div>
+
+<h3>Complexity</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Operation</th><th>Time</th><th>Space</th></tr></thead>
+  <tbody>
+    <tr><td>Modification</td><td>O(1)</td><td>O(1) per modification</td></tr>
+    <tr><td>Access at version t</td><td>O(log m) per node traversed</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The O(log m) slowdown comes from binary searching the modification list at each node to find the right version. This can be improved to O(log log m) using van Emde Boas trees.</p>
+
+<h3>Limitation</h3>
+<p>Fat nodes alone provide only <strong>partial persistence</strong>. For full persistence, the modification history at each node is no longer linear, and searching becomes more complex.</p>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 7 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s7"><span class="section-num">7.</span> Techniques: Path Copying</h2>
+
+<h3>Idea</h3>
+<p>When modifying a node, copy all nodes on the path from the root to that node. The old root points to the old version; the new root points to the new version. Unmodified subtrees are <strong>shared</strong>.</p>
+
+<div class="diagram">
+<pre>
+Original tree (v₀):           After insert 3 (v₁):
+
+       5                    5  (copy)        5
+      / \                  / \              / \
+     3   8                2   8            3   8
+    / \                  / \              / \
+   2   4                1   3 (copy)    2   4
+  /                        / \         /
+ 1                        2   4       1
+                         /
+                        1
+
+v₀ root ──→ original 5     (still valid, immutable)
+v₁ root ──→ copied 5       (shares subtree rooted at 8)
+</pre>
+<p class="diagram-caption">Path copying: only nodes on the root-to-modification path are copied</p>
+</div>
+
+<h3>Complexity</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Operation</th><th>Time</th><th>Space</th></tr></thead>
+  <tbody>
+    <tr><td>Modification</td><td>O(depth) = O(log n) for balanced trees</td><td>O(log n) new nodes</td></tr>
+    <tr><td>Access at version t</td><td>O(log m) to find the right root, then O(log n) traversal</td><td>—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Advantage</h3>
+<p>Path copying naturally supports <strong>full persistence</strong> — any old root can be the starting point for a new modification, creating a branch. It's the technique used in functional programming languages like Haskell and Clojure.</p>
+
+<h3>Disadvantage</h3>
+<p>Space can be expensive: O(log n) per modification for trees, but O(n) for a linked list (the entire "path" from head to tail must be copied).</p>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 8 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s8"><span class="section-num">8.</span> The DSST Combination</h2>
+
+<h3>The key result</h3>
+<p>Driscoll, Sarnak, Sleator, and Tarjan (1986) combined fat nodes and path copying to achieve the best of both worlds:</p>
+
+<div class="example-box">
+  <strong>DSST Theorem:</strong> Any linked data structure with bounded in-degree <em>d</em> can be made partially or fully persistent with O(1) amortized time and space overhead per modification, and O(log m) access slowdown.
+</div>
+
+<h3>How it works</h3>
+<ol>
+  <li><strong>Modification box:</strong> Each node stores one extra "slot" (the modification box) that can hold a single change — a field name, new value, and version stamp.</li>
+  <li><strong>If the box is empty:</strong> The modification is stored directly in the box. Cost: O(1).</li>
+  <li><strong>If the box is full:</strong> The node is <em>copied</em> (using the latest values), and the modification is applied to the copy. The copy has an empty modification box. Parent pointers are then cascaded (like path copying), which may trigger further copies.</li>
+</ol>
+
+<div class="diagram">
+<pre>
+Node X (modification box empty):
+┌──────────────────────────────────┐
+│ left=A, right=B, key=5          │
+│ mod box: [ empty ]              │
+└──────────────────────────────────┘
+     │  Modify left→C at v₃
+     ▼
+┌──────────────────────────────────┐
+│ left=A, right=B, key=5          │
+│ mod box: [v₃, left, C]          │
+└──────────────────────────────────┘
+     │  Modify key→8 at v₇ (box full → copy)
+     ▼
+Node X' (copy, using latest values):
+┌──────────────────────────────────┐
+│ left=C, right=B, key=8          │
+│ mod box: [ empty ]              │
+└──────────────────────────────────┘
+  + cascade: update X's parent to point to X'
+</pre>
+<p class="diagram-caption">DSST modification box mechanism</p>
+</div>
+
+<h3>Amortized analysis</h3>
+<p>The amortized cost is proven using a <strong>potential function</strong>:</p>
+<ul>
+  <li>Φ(T) = number of <strong>full live nodes</strong> (reachable nodes whose modification box is full).</li>
+  <li>Each copy costs O(1) actual work but <em>decreases</em> the potential by 1 (a full live node is replaced by an empty live node).</li>
+  <li>Filling a modification box increases the potential by 1.</li>
+  <li>Net amortized cost per modification: O(1).</li>
+</ul>
+
+<div class="note tip"><strong>Intuition:</strong> Copies are "paid for" by the potential released when full nodes are replaced. The modification box acts as a buffer — most modifications are absorbed without copying.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 9 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s9"><span class="section-num">9.</span> Persistent BST Example</h2>
+
+<h3>Path-copying persistent BST</h3>
+<p>The simplest practical persistent data structure: a balanced BST where each insert/delete creates a new root by copying the path from root to the modified leaf.</p>
+
+<pre><span class="lang-tag">python</span><code><span class="kw">class</span> <span class="fn">Node</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, key, left=<span class="bi">None</span>, right=<span class="bi">None</span>):
+        self.key = key
+        self.left = left
+        self.right = right
+
+<span class="kw">def</span> <span class="fn">insert</span>(root, key):
+    <span class="str">"""Returns a NEW root — old root is unchanged."""</span>
+    <span class="kw">if</span> root <span class="kw">is</span> <span class="bi">None</span>:
+        <span class="kw">return</span> <span class="fn">Node</span>(key)
+    <span class="kw">if</span> key &lt; root.key:
+        <span class="cmt"># Copy current node, recurse left</span>
+        <span class="kw">return</span> <span class="fn">Node</span>(root.key, <span class="fn">insert</span>(root.left, key), root.right)
+    <span class="kw">elif</span> key &gt; root.key:
+        <span class="cmt"># Copy current node, recurse right</span>
+        <span class="kw">return</span> <span class="fn">Node</span>(root.key, root.left, <span class="fn">insert</span>(root.right, key))
+    <span class="kw">else</span>:
+        <span class="kw">return</span> root  <span class="cmt"># Duplicate key, no change</span>
+
+<span class="kw">def</span> <span class="fn">search</span>(root, key):
+    <span class="kw">if</span> root <span class="kw">is</span> <span class="bi">None</span>:
+        <span class="kw">return</span> <span class="bi">False</span>
+    <span class="kw">if</span> key == root.key:
+        <span class="kw">return</span> <span class="bi">True</span>
+    <span class="kw">if</span> key &lt; root.key:
+        <span class="kw">return</span> <span class="fn">search</span>(root.left, key)
+    <span class="kw">return</span> <span class="fn">search</span>(root.right, key)
+
+<span class="cmt"># Usage — each insert returns a new version</span>
+versions = []
+v0 = <span class="bi">None</span>
+v1 = <span class="fn">insert</span>(v0, <span class="num">5</span>)    <span class="cmt"># versions: [5]</span>
+v2 = <span class="fn">insert</span>(v1, <span class="num">3</span>)    <span class="cmt"># versions: [5, 3]</span>
+v3 = <span class="fn">insert</span>(v2, <span class="num">8</span>)    <span class="cmt"># versions: [5, 3, 8]</span>
+v4 = <span class="fn">insert</span>(v3, <span class="num">1</span>)    <span class="cmt"># versions: [5, 3, 8, 1]</span>
+
+<span class="cmt"># Query old versions — they're still intact!</span>
+<span class="bi">print</span>(<span class="fn">search</span>(v2, <span class="num">8</span>))   <span class="cmt"># False — 8 wasn't in v2</span>
+<span class="bi">print</span>(<span class="fn">search</span>(v3, <span class="num">8</span>))   <span class="cmt"># True  — 8 was added in v3</span>
+<span class="bi">print</span>(<span class="fn">search</span>(v4, <span class="num">3</span>))   <span class="cmt"># True  — 3 is still in v4</span></code></pre>
+
+<h3>Persistent segment tree (competitive programming)</h3>
+<p>One of the most interview-relevant persistent structures. Each point update creates O(log n) new nodes via path copying.</p>
+
+<pre><span class="lang-tag">python</span><code><span class="kw">class</span> <span class="fn">SegNode</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, val=<span class="num">0</span>, left=<span class="bi">None</span>, right=<span class="bi">None</span>):
+        self.val = val
+        self.left = left
+        self.right = right
+
+<span class="kw">def</span> <span class="fn">build</span>(lo, hi):
+    <span class="kw">if</span> lo == hi:
+        <span class="kw">return</span> <span class="fn">SegNode</span>()
+    mid = (lo + hi) // <span class="num">2</span>
+    <span class="kw">return</span> <span class="fn">SegNode</span>(<span class="num">0</span>, <span class="fn">build</span>(lo, mid), <span class="fn">build</span>(mid + <span class="num">1</span>, hi))
+
+<span class="kw">def</span> <span class="fn">update</span>(node, lo, hi, idx, delta):
+    <span class="str">"""Returns a NEW root with arr[idx] += delta."""</span>
+    <span class="kw">if</span> lo == hi:
+        <span class="kw">return</span> <span class="fn">SegNode</span>(node.val + delta)
+    mid = (lo + hi) // <span class="num">2</span>
+    <span class="kw">if</span> idx &lt;= mid:
+        <span class="kw">return</span> <span class="fn">SegNode</span>(
+            node.val + delta,
+            <span class="fn">update</span>(node.left, lo, mid, idx, delta),
+            node.right   <span class="cmt"># shared — no copy</span>
+        )
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="fn">SegNode</span>(
+            node.val + delta,
+            node.left,   <span class="cmt"># shared — no copy</span>
+            <span class="fn">update</span>(node.right, mid + <span class="num">1</span>, hi, idx, delta)
+        )
+
+<span class="kw">def</span> <span class="fn">query</span>(node, lo, hi, l, r):
+    <span class="str">"""Sum query on range [l, r]."""</span>
+    <span class="kw">if</span> node <span class="kw">is</span> <span class="bi">None</span> <span class="kw">or</span> lo &gt; r <span class="kw">or</span> hi &lt; l:
+        <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">if</span> l &lt;= lo <span class="kw">and</span> hi &lt;= r:
+        <span class="kw">return</span> node.val
+    mid = (lo + hi) // <span class="num">2</span>
+    <span class="kw">return</span> <span class="fn">query</span>(node.left, lo, mid, l, r) + \
+           <span class="fn">query</span>(node.right, mid + <span class="num">1</span>, hi, l, r)</code></pre>
+
+<div class="note tip"><strong>Interview tip:</strong> Persistent segment trees are used to answer "kth smallest in a range" queries. Store sorted-order insertion versions and use binary search across two version roots.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 10 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s10"><span class="section-num">10.</span> Retroactive Data Structures</h2>
+
+<h3>What is retroactivity?</h3>
+<p>A <strong>retroactive data structure</strong> supports modifications to the <em>sequence of operations</em> that have been performed on it. You can insert, delete, or update an operation at any point in the past, and the structure reflects what <em>would have happened</em> if the modified history had been the original.</p>
+
+<h3>How it differs from persistence</h3>
+<div class="algo-compare">
+  <div class="algo-card">
+    <h4>Persistence</h4>
+    <p>Preserves old versions as immutable snapshots. Modifying a version creates a <em>new branch</em> — old versions are never altered.</p>
+  </div>
+  <div class="algo-card">
+    <h4>Retroactivity</h4>
+    <p>Modifies the <em>timeline</em> itself. Inserting an operation at time t₃ changes the state at t₃, t₄, t₅, … — a <strong>cascading ripple effect</strong>.</p>
+  </div>
+</div>
+
+<h3>Formal setup</h3>
+<p>Given a sequence of operations U = [u<sub>t₁</sub>, u<sub>t₂</sub>, …, u<sub>tₘ</sub>] ordered by time:</p>
+<ul>
+  <li><code>Insert(t, op)</code> — insert operation <code>op</code> at time <em>t</em> in the history.</li>
+  <li><code>Delete(t)</code> — remove the operation that was at time <em>t</em>.</li>
+</ul>
+<p>After either operation, the current state is recomputed as if the modified sequence had always been the history.</p>
+
+<div class="note"><strong>Key constraint:</strong> There is no general efficient technique to make <em>any</em> data structure retroactive. Demaine, Iacono, and Langerman (2007) proved that efficient retroactivity must exploit the specific structure's properties.</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 11 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s11"><span class="section-num">11.</span> Partial Retroactivity</h2>
+
+<h3>Definition</h3>
+<p>A data structure is <strong>partially retroactive</strong> if:</p>
+<ul>
+  <li>You can <code>Insert(t, op)</code> and <code>Delete(t)</code> operations in the past.</li>
+  <li>You can only <strong>query the current state</strong> (the state after all operations in the modified timeline).</li>
+</ul>
+
+<h3>Example: partially retroactive stack</h3>
+<div class="diagram">
+<pre>
+Timeline:  push(3)  push(7)  pop()  push(5)
+State:        [3]   [3,7]    [3]    [3,5]    ← current state: [3,5]
+
+Insert(t₁.₅, push(9)):
+Timeline:  push(3)  push(9)  push(7)  pop()  push(5)
+State:        [3]   [3,9]   [3,9,7]  [3,9]   [3,9,5]  ← new current: [3,9,5]
+</pre>
+<p class="diagram-caption">A retroactive insert ripples through all subsequent states</p>
+</div>
+
+<h3>Running times</h3>
+<p>Let <em>m</em> = total operations, <em>r</em> = operations before the retroactive change, <em>n</em> = max elements at any time:</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Data Structure</th><th>Partial Retroactivity Cost</th></tr></thead>
+  <tbody>
+    <tr><td>Queue / Deque</td><td>O(log m)</td></tr>
+    <tr><td>Priority Queue</td><td>O(√m · log m)</td></tr>
+    <tr><td>Union-Find</td><td>O(m · α(m))</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 12 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s12"><span class="section-num">12.</span> Full Retroactivity</h2>
+
+<h3>Definition</h3>
+<p>A data structure is <strong>fully retroactive</strong> if in addition to retroactive insert/delete, you can also <strong>query at any past time</strong>:</p>
+<ul>
+  <li><code>Insert(t, op)</code> — add operation at time <em>t</em>.</li>
+  <li><code>Delete(t)</code> — remove operation at time <em>t</em>.</li>
+  <li><code>Query(t, q)</code> — answer query <em>q</em> as of time <em>t</em> (in the modified timeline).</li>
+</ul>
+
+<h3>Difficulty</h3>
+<p>Full retroactivity is generally harder than partial because every retroactive change can affect the answer at <em>any</em> time point, not just the present. The cascading effect must be tracked at all intermediate states.</p>
+
+<div class="note tip"><strong>Think of it this way:</strong> Partial retroactivity = "change the past, see the present." Full retroactivity = "change the past, inspect any moment in the modified timeline."</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 13 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s13"><span class="section-num">13.</span> Retroactive Priority Queue</h2>
+
+<h3>The canonical example</h3>
+<p>The priority queue is the most studied retroactive structure. Operations are <code>insert(x)</code> and <code>delete-min()</code>, and we want to retroactively add or remove these at any past time.</p>
+
+<h3>The geometric view</h3>
+<p>Map the timeline onto the x-axis. For each element, draw a horizontal line segment from its insertion time to its deletion time. The elements currently in the queue at time <em>t</em> are exactly the segments that cross the vertical line at <em>t</em>.</p>
+
+<div class="diagram">
+<pre>
+value
+  │
+  │   ────────── 7 ──────────
+  │        ─────── 5 ─────
+  │   ── 3 ──
+  │              ───── 2 ─────────
+  │
+  └──────────────────────────────→ time
+       t₁    t₂    t₃    t₄
+
+At time t₂: elements in queue = {7, 5, 3}
+delete-min at t₂ removes 3 (shortest value segment)
+</pre>
+<p class="diagram-caption">Geometric view: each element is a time interval</p>
+</div>
+
+<h3>Key insight — bridges</h3>
+<p>A retroactive insert or delete changes which element is the minimum at some time range. The "bridge" structure tracks, for each time interval, whether the set of present elements has changed — enabling efficient updates in O(√m · log m) for partial retroactivity.</p>
+
+<h3>Results (Demaine, Iacono, Langerman 2007)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Type</th><th>Insert/Delete</th><th>Query</th></tr></thead>
+  <tbody>
+    <tr><td>Partially retroactive PQ</td><td>O(√m · log m)</td><td>O(1) — only current state</td></tr>
+    <tr><td>Fully retroactive PQ</td><td>O(√m · log m)</td><td>O(√m · log m)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 14 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s14"><span class="section-num">14.</span> Persistence vs Retroactivity — Comparison</h2>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Property</th><th>Persistence</th><th>Retroactivity</th></tr></thead>
+  <tbody>
+    <tr><td>What is preserved?</td><td>All version snapshots</td><td>The current (and optionally past) state after timeline edits</td></tr>
+    <tr><td>Modification semantics</td><td>Branching — old versions immutable</td><td>Rippling — past changes propagate forward</td></tr>
+    <tr><td>Version history shape</td><td>Linear / Tree / DAG</td><td>Single mutable timeline</td></tr>
+    <tr><td>Old versions altered?</td><td>Never</td><td>Always (retroactive ops rewrite history)</td></tr>
+    <tr><td>General technique?</td><td>Yes (DSST for pointer machines)</td><td>No — structure-specific</td></tr>
+    <tr><td>Analogy</td><td>Git branching</td><td>Git interactive rebase</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 15 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s15"><span class="section-num">15.</span> Applications</h2>
+
+<h3>Planar point location</h3>
+<p>Given a planar subdivision (e.g., a map of polygonal regions), answer: "which region contains point <em>p</em>?"</p>
+<p><strong>Solution (Sarnak &amp; Tarjan, 1986):</strong> Sweep a vertical line from left to right. Maintain a persistent balanced BST of line segments ordered by y-coordinate. At each event point (segment start/end), update the BST. To query point <em>p</em> = (x, y), find the BST version at time <em>x</em> and search for <em>y</em>.</p>
+<p>Result: O(n log n) preprocessing, O(log n) query, O(n log n) space (using path copying).</p>
+
+<h3>Persistent segment trees in competitive programming</h3>
+<ul>
+  <li><strong>Kth smallest in range [l, r]:</strong> Build persistent segment tree on sorted values. Version <em>i</em> includes elements a[0..i]. Answer = walk two version roots (version <em>r</em> minus version <em>l-1</em>).</li>
+  <li><strong>Online queries on arrays:</strong> Each update creates a new version; past queries use old roots.</li>
+</ul>
+
+<h3>Functional data structures</h3>
+<ul>
+  <li><strong>Haskell, Clojure, Scala:</strong> All standard library collections are persistent. Lists use structural sharing; maps use persistent red-black trees or HAMTs.</li>
+  <li><strong>Redux (JavaScript):</strong> State management via immutable persistent data, enabling time-travel debugging.</li>
+</ul>
+
+<h3>Error correction &amp; recovery</h3>
+<ul>
+  <li>A sensor network produces erroneous data. Retroactively remove the bad readings and recompute the system state.</li>
+  <li>A database transaction is found to be incorrect hours later. Retroactively undo it and replay subsequent transactions.</li>
+</ul>
+
+<hr>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Section 16 -->
+<!-- ════════════════════════════════════════ -->
+<h2 id="s16"><span class="section-num">16.</span> Key Results &amp; References</h2>
+
+<h3>Foundational papers</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Paper</th><th>Year</th><th>Key Result</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Driscoll, Sarnak, Sleator, Tarjan</strong> — "Making Data Structures Persistent"</td><td>1986</td><td>O(1) amortized overhead for partial/full persistence on pointer machines with bounded in-degree</td></tr>
+    <tr><td><strong>Sarnak &amp; Tarjan</strong> — "Planar Point Location Using Persistent Search Trees"</td><td>1986</td><td>O(log n) point location via persistent BST</td></tr>
+    <tr><td><strong>Demaine, Iacono, Langerman</strong> — "Retroactive Data Structures"</td><td>2007</td><td>Defined partial/full retroactivity; showed no general efficient transformation exists</td></tr>
+    <tr><td><strong>Okasaki</strong> — "Purely Functional Data Structures"</td><td>1998</td><td>Comprehensive treatment of persistent structures in functional programming</td></tr>
+    <tr><td><strong>Fiat &amp; Kaplan</strong> — "Making Data Structures Confluently Persistent"</td><td>2001</td><td>Confluent persistence with effective meld operations</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Summary of complexities</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Technique</th><th>Access Slowdown</th><th>Modification Overhead</th><th>Space</th></tr></thead>
+  <tbody>
+    <tr><td>Fat nodes (alone)</td><td>O(log m) per node</td><td>O(1)</td><td>O(1) per mod</td></tr>
+    <tr><td>Path copying (alone)</td><td>O(log m) root lookup</td><td>O(depth)</td><td>O(depth) per mod</td></tr>
+    <tr><td>DSST combination</td><td>O(log m)</td><td>O(1) amortized</td><td>O(1) amortized</td></tr>
+    <tr><td>Retroactive PQ (partial)</td><td>O(1) current only</td><td>O(√m · log m)</td><td>O(m)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note tip"><strong>What to remember for interviews:</strong> (1) Path copying on balanced trees = O(log n) per version. (2) Persistent segment trees for range queries across versions. (3) DSST gives O(1) amortized persistence for any bounded-in-degree pointer structure.</div>
+
+<p class="footer">
+  Subham Santra · <a href="https://www.linkedin.com/in/ami-subsa" target="_blank" rel="noreferrer">LinkedIn</a> · subhamsantra2016@gmail.com
+</p>
+
+</main>
+</div>
+</body>
+</html>

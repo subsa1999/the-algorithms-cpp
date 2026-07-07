@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Data Structures — Syllabus</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="layout-article accent-purple">
+    <main class="page">
+        <nav class="back-nav"><a href="index.html">← Back to Paperwork</a></nav>
+
+        <section class="hero">
+            <span class="eyebrow">Computer Science · Data Structures · Graduate-Level</span>
+            <h1>Advanced Data Structures</h1>
+            <p class="subtitle">
+                A structured syllabus covering 8 units and 42 lectures — from persistent and geometric
+                data structures to cache-oblivious algorithms, integer structures, and dynamic graph
+                techniques — with a recommended learning order and interview priority guide.
+            </p>
+
+            <div class="hero-grid">
+                <article class="callout">
+                    <h2>How to use this page</h2>
+                    <p>
+                        Follow the <a href="#learning-order">recommended learning order</a> for a
+                        research-style understanding that also maps well to interviews. The
+                        <a href="#interview-priority">interview priority table</a> at the bottom
+                        tells you which topics have the highest ROI for FAANG-style prep.
+                    </p>
+                </article>
+
+                <div class="stats">
+                    <article class="stat-card">
+                        <strong>8</strong>
+                        <span>Thematic units</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>42</strong>
+                        <span>Lectures total</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>7</strong>
+                        <span>Prerequisite topic families</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>High</strong>
+                        <span>Interview relevance for FAANG</span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── TOC ── -->
+        <nav class="toc" id="toc">
+            <h2>Contents</h2>
+            <ol>
+                <li><a href="#syllabus">Syllabus — Unit Breakdown</a></li>
+                <li><a href="#learning-order">Recommended Learning Order</a></li>
+                <li><a href="#prerequisites">Prerequisites</a></li>
+                <li><a href="#interview-priority">Interview Priority Guide</a></li>
+            </ol>
+        </nav>
+
+        <!-- ══════════════════════════════════════
+             Section 1: Syllabus
+             ══════════════════════════════════════ -->
+        <section class="guide-section" id="syllabus">
+            <div class="section-header">
+                <div>
+                    <h2>Syllabus — Unit Breakdown</h2>
+                    <p>Eight units, each 5–6 lectures, covering the full breadth of advanced data structures.</p>
+                </div>
+            </div>
+
+            <table class="cmp-table">
+                <thead>
+                    <tr>
+                        <th>Unit</th>
+                        <th>Topics</th>
+                        <th>Lectures</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong><a href="TEMPORAL_DATA_STRUCTURES.html">1 — Temporal Data Structures</a></strong></td>
+                        <td>Persistent data structures, retroactive data structures, pointer machine model</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2 — Geometric Data Structures</strong></td>
+                        <td>Point location, range searching, fractional cascading, data structures for moving data</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3 — Dynamic Optimality</strong></td>
+                        <td>Analytic bounds, splay trees, geometric view, independent rectangle, key-independent optimality</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4 — External Memory Data Structures</strong></td>
+                        <td>Cache-oblivious data structures, B-trees, cache-oblivious priority queues</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5 — Integer Data Structures</strong></td>
+                        <td>Predecessor/successor problems, van Emde Boas trees, x-fast/y-fast trees, fusion trees, sketching, parallel comparison, most significant set bit</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6 — Static Trees &amp; String Data Structures</strong></td>
+                        <td>LCA, RMQ, level ancestor, suffix tree, suffix array, linear-time construction for large alphabets, suffix tray, document retrieval</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7 — Memory-Efficient Data Structures</strong></td>
+                        <td>Rank/select, tries, compact suffix arrays and trees</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td><strong>8 — Dynamic Graphs</strong></td>
+                        <td>Link-cut trees, heavy-light decomposition, Euler tour trees, decremental tree connectivity, fully dynamic connectivity</td>
+                        <td>6</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2"><strong>Total</strong></td>
+                        <td><strong>42 lectures</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <!-- ══════════════════════════════════════
+             Section 2: Learning Order
+             ══════════════════════════════════════ -->
+        <section class="guide-section" id="learning-order">
+            <div class="section-header">
+                <div>
+                    <h2>Recommended Learning Order</h2>
+                    <p>For interview prep + research-style understanding, follow this sequence.</p>
+                </div>
+            </div>
+
+            <div class="guide-card">
+                <ol class="learning-path">
+                    <li>
+                        <strong>Static Trees &amp; String Data Structures</strong>
+                        <span class="chip thread">Unit 6</span>
+                        <p>Foundation for LCA, RMQ, suffix arrays — highest interview ROI.</p>
+                    </li>
+                    <li>
+                        <strong>Dynamic Graphs</strong>
+                        <span class="chip process">Unit 8</span>
+                        <p>Link-cut trees, HLD, Euler tour trees — essential for competitive programming and system design.</p>
+                    </li>
+                    <li>
+                        <strong>Integer Data Structures</strong>
+                        <span class="chip lwt">Unit 5</span>
+                        <p>van Emde Boas, x-fast/y-fast trees, fusion trees — predecessor problems and lower bounds.</p>
+                    </li>
+                    <li>
+                        <strong>External Memory Data Structures</strong>
+                        <span class="chip ipc">Unit 4</span>
+                        <p>B-trees, cache-oblivious structures — critical for systems and database work.</p>
+                    </li>
+                    <li>
+                        <strong>Memory-Efficient Data Structures</strong>
+                        <span class="chip os">Unit 7</span>
+                        <p>Rank/select, succinct tries, compact suffix arrays — space-efficient representations.</p>
+                    </li>
+                    <li>
+                        <strong>Temporal Data Structures</strong>
+                        <span class="chip thread">Unit 1</span>
+                        <p>Persistent and retroactive data structures — versioned data and undo semantics.</p>
+                    </li>
+                    <li>
+                        <strong>Geometric Data Structures</strong>
+                        <span class="chip lwt">Unit 2</span>
+                        <p>Point location, range searching, fractional cascading — computational geometry foundations.</p>
+                    </li>
+                    <li>
+                        <strong>Dynamic Optimality</strong>
+                        <span class="chip survey">Unit 3</span>
+                        <p>Splay trees, geometric view — theoretical depth, lower priority for interviews.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════
+             Section 3: Prerequisites
+             ══════════════════════════════════════ -->
+        <section class="guide-section" id="prerequisites">
+            <div class="section-header">
+                <div>
+                    <h2>Prerequisites</h2>
+                    <p>You should be comfortable with these before diving in.</p>
+                </div>
+            </div>
+
+            <div class="guide-card">
+                <div class="prereq-grid">
+                    <div class="prereq-group">
+                        <h3>Trees &amp; Heaps</h3>
+                        <ul>
+                            <li>Balanced BSTs: AVL, Red-Black Tree, Treap</li>
+                            <li>Segment Tree, Fenwick Tree</li>
+                            <li>Heap, Priority Queue</li>
+                        </ul>
+                    </div>
+                    <div class="prereq-group">
+                        <h3>Graphs</h3>
+                        <ul>
+                            <li>Graph DFS / BFS</li>
+                            <li>Minimum Spanning Tree</li>
+                            <li>Disjoint Set Union (DSU)</li>
+                        </ul>
+                    </div>
+                    <div class="prereq-group">
+                        <h3>Analysis &amp; Theory</h3>
+                        <ul>
+                            <li>Amortized analysis</li>
+                            <li>Big-O, lower bounds</li>
+                            <li>Basic computational geometry</li>
+                        </ul>
+                    </div>
+                    <div class="prereq-group">
+                        <h3>Strings</h3>
+                        <ul>
+                            <li>KMP algorithm</li>
+                            <li>Z-algorithm</li>
+                            <li>Trie</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════
+             Section 4: Interview Priority
+             ══════════════════════════════════════ -->
+        <section class="guide-section" id="interview-priority">
+            <div class="section-header">
+                <div>
+                    <h2>Interview Priority Guide</h2>
+                    <p>Which advanced DS topics matter most for software engineering interviews.</p>
+                </div>
+            </div>
+
+            <table class="cmp-table">
+                <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Topics</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="chip lwt">Very High</span></td>
+                        <td>LCA, RMQ, HLD, Euler Tour Trees, Suffix Array, Segment Tree-style ideas</td>
+                    </tr>
+                    <tr>
+                        <td><span class="chip thread">High</span></td>
+                        <td>Persistent segment tree, Link-Cut Trees, Tries, Rank/Select basics</td>
+                    </tr>
+                    <tr>
+                        <td><span class="chip process">Medium</span></td>
+                        <td>van Emde Boas, x-fast/y-fast trees, B-trees</td>
+                    </tr>
+                    <tr>
+                        <td><span class="chip survey">Low</span></td>
+                        <td>Dynamic optimality, fusion trees, fractional cascading</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example-box">
+                <strong>FAANG highest-ROI topics:</strong> LCA, RMQ, HLD, tries, suffix arrays,
+                persistent segment trees, and dynamic connectivity ideas.
+            </div>
+        </section>
+
+        <p class="footer">
+            Subham Santra · <a href="https://www.linkedin.com/in/ami-subsa" target="_blank" rel="noreferrer">LinkedIn</a> · subhamsantra2016@gmail.com
+        </p>
+
+    </main>
+</body>
+
+</html>

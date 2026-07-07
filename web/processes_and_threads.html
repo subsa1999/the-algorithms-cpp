@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Processes, Threads, and IPC — A Systems Deep Dive</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="layout-article accent-pink">
+    <main class="page">
+        <nav class="back-nav"><a href="index.html">← Back to Paperwork</a></nav>
+
+        <!-- ════════════════════ HERO ════════════════════ -->
+        <section class="hero">
+            <span class="eyebrow">Computer Science · Information Systems · OS Internals</span>
+            <h1>Processes, Threads &amp; Inter-Process Communication</h1>
+            <p class="subtitle">
+                A systems-level deep dive covering processes, kernel threads, lightweight (user-level) threads,
+                the mechanisms operating systems use for inter-process and inter-thread communication, and
+                concrete differences between the Windows and Linux process models. Written to be correct,
+                example driven, and diagram driven.
+            </p>
+
+            <div class="hero-grid">
+                <article class="callout">
+                    <h2>Scope of this page</h2>
+                    <p>
+                        We cover five connected topics: (1) what a process really is,
+                        (2) how threads differ from processes, (3) lightweight / user-level threads and
+                        modern green-thread runtimes, (4) IPC and inter-thread communication primitives,
+                        and (5) how Windows and Linux diverge in their process and thread implementations.
+                    </p>
+                </article>
+
+                <div class="stats">
+                    <article class="stat-card">
+                        <strong>5</strong>
+                        <span>Core topics covered</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>2</strong>
+                        <span>OS families compared: Windows &amp; Linux</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>12+</strong>
+                        <span>Diagrams and worked examples</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>1:N</strong>
+                        <span>Process-to-thread relationship explored</span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ════════════════════ TOC ════════════════════ -->
+        <nav class="toc" id="toc">
+            <h2>Contents</h2>
+            <ol>
+                <li>
+                    <a href="#processes">Processes</a>
+                    <ol>
+                        <li><a href="#process-anatomy">Anatomy of a process</a></li>
+                        <li><a href="#process-lifecycle">Lifecycle and states</a></li>
+                    </ol>
+                </li>
+                <li>
+                    <a href="#threads">Threads (Kernel Threads)</a>
+                    <ol>
+                        <li><a href="#thread-vs-process">Thread vs. process</a></li>
+                        <li><a href="#thread-sharing">What threads share</a></li>
+                    </ol>
+                </li>
+                <li>
+                    <a href="#lwt">Lightweight / User-Level Threads</a>
+                    <ol>
+                        <li><a href="#lwt-models">M:N, 1:1, and N:1 models</a></li>
+                        <li><a href="#lwt-modern">Modern green-thread runtimes</a></li>
+                    </ol>
+                </li>
+                <li>
+                    <a href="#ipc">Inter-Process and Inter-Thread Communication</a>
+                    <ol>
+                        <li><a href="#ipc-mechanisms">IPC mechanisms</a></li>
+                        <li><a href="#thread-sync">Thread synchronization primitives</a></li>
+                    </ol>
+                </li>
+                <li>
+                    <a href="#windows-vs-linux">Windows vs. Linux Process Models</a>
+                    <ol>
+                        <li><a href="#creation">Process creation: fork vs. CreateProcess</a></li>
+                        <li><a href="#thread-impl">Thread implementation differences</a></li>
+                        <li><a href="#ipc-os">IPC across the two OSes</a></li>
+                    </ol>
+                </li>
+                <li><a href="#summary">Summary Table</a></li>
+            </ol>
+        </nav>
+
+        <!-- ════════════════════ 1. PROCESSES ════════════════════ -->
+        <section class="guide-section" id="processes">
+            <div class="section-header">
+                <div>
+                    <h2>1. Processes</h2>
+                    <p>What they are, what they own, and how the OS manages them.</p>
+                </div>
+            </div>
+
+            <article class="guide-card" id="process-anatomy">
+                <h3>Anatomy of a Process</h3>
+                <div class="guide-meta">
+                    <span class="chip process">Process</span>
+                    <span class="chip process">Virtual address space</span>
+                    <span class="chip process">Isolation</span>
+                </div>
+                <p>
+                    A process is the operating system's unit of resource ownership and protection. When you launch a program, the OS creates a process that encapsulates everything the program needs to run: its own virtual address space, one or more threads of execution, open file descriptors, security credentials, and environment variables. Two processes cannot accidentally corrupt each other's memory because the hardware (via the MMU and page tables) enforces address-space isolation. A pointer in process A simply has no meaning inside process B's address space.
+                </p>
+                <p>
+                    Every process is identified by a unique process ID (PID). It also carries metadata the OS needs for scheduling, accounting, and security: the user who owns it, the priority, CPU time consumed, the current working directory, and signal masks. Conceptually, a process is a running instance of a program combined with all the kernel-managed state that instance needs.
+                </p>
+                <div class="diagram">
+                    <pre>
+  Process A (PID 4201)                    Process B (PID 4202)
+ ┌──────────────────────┐                ┌──────────────────────┐
+ │  Virtual Address Space│                │  Virtual Address Space│
+ │ ┌──────────────────┐ │                │ ┌──────────────────┐ │
+ │ │ Text  (code)     │ │                │ │ Text  (code)     │ │
+ │ │ Data  (globals)  │ │                │ │ Data  (globals)  │ │
+ │ │ Heap  (malloc)   │ │                │ │ Heap  (malloc)   │ │
+ │ │ Stack (main thr) │ │                │ │ Stack (main thr) │ │
+ │ └──────────────────┘ │                │ └──────────────────┘ │
+ │  File descriptors     │                │  File descriptors     │
+ │  Signal handlers      │                │  Signal handlers      │
+ │  PID, UID, env vars   │                │  PID, UID, env vars   │
+ └──────────────────────┘                └──────────────────────┘
+          ▲                                        ▲
+          │  Hardware-enforced isolation            │
+          └────────── MMU / Page Tables ───────────┘</pre>
+                    <p class="diagram-caption">Each process has its own virtual address space. The MMU prevents cross-process memory access.</p>
+                </div>
+                <div class="example-box">
+                    <strong>Example:</strong> When you open two tabs in a modern browser like Chrome, each tab often runs in a separate process. If a JavaScript bug causes a crash in one tab, the other tab survives because the OS isolates their memory. This is the fundamental value of process-level isolation.
+                </div>
+                <p>
+                    The cost of this isolation is overhead. Creating a process means allocating a new page table, copying or setting up file descriptor tables, and initializing kernel structures. Context-switching between processes requires flushing or tagging TLB entries because the virtual-to-physical mapping changes entirely. These costs are not catastrophic on modern hardware, but they are real, and they motivate the existence of threads as a lighter alternative for concurrency within a single program.
+                </p>
+            </article>
+
+            <article class="guide-card" id="process-lifecycle">
+                <h3>Lifecycle and States</h3>
+                <div class="guide-meta">
+                    <span class="chip process">States</span>
+                    <span class="chip process">Scheduling</span>
+                </div>
+                <p>
+                    A process moves through a well-defined set of states during its lifetime. The details vary slightly between OSes, but the core model is universal. A process begins in a <strong>created</strong> (or new) state while the OS sets up its structures. It then moves to <strong>ready</strong>, meaning it is prepared to run but waiting for the scheduler to assign it a CPU core. When the scheduler picks it, the process enters the <strong>running</strong> state. If the process issues a blocking system call (such as reading from disk or waiting for a network packet), it moves to <strong>blocked</strong> (waiting). When the I/O completes, it returns to ready. Eventually, when the process calls <code>exit()</code> or is killed, it enters a <strong>terminated</strong> (zombie on Linux) state until its parent collects its exit status.
+                </p>
+                <div class="diagram">
+                    <pre>
+            ┌─────────┐
+            │ Created │
+            └────┬────┘
+                 ▼
+            ┌─────────┐   scheduler    ┌─────────┐
+            │  Ready  │ ─────────────► │ Running │
+            └─────────┘ ◄───────────── └────┬────┘
+                 ▲        preempted /        │
+                 │        time slice         │ blocking I/O
+                 │                           ▼
+                 │                     ┌──────────┐
+                 └──── I/O done ────── │ Blocked  │
+                                       └──────────┘
+                                            │
+            ┌────────────┐                  │ exit()
+            │ Terminated │ ◄────────────────┘
+            └────────────┘</pre>
+                    <p class="diagram-caption">Five-state process model. Transitions are driven by the scheduler and system calls.</p>
+                </div>
+                <div class="example-box">
+                    <strong>Example:</strong> A web server process calls <code>read()</code> on a socket. It has no data yet, so the kernel moves it to Blocked. When a client sends a request, the NIC raises an interrupt, the kernel copies data into the buffer, and the process moves back to Ready. The scheduler eventually runs it again.
+                </div>
+            </article>
+        </section>
+
+        <!-- ════════════════════ 2. THREADS ════════════════════ -->
+        <section class="guide-section" id="threads">
+            <div class="section-header">
+                <div>
+                    <h2>2. Threads (Kernel Threads)</h2>
+                    <p>Concurrency within a single process, scheduled by the OS kernel.</p>
+                </div>
+            </div>
+
+            <article class="guide-card" id="thread-vs-process">
+                <h3>Thread vs. Process</h3>
+                <div class="guide-meta">
+                    <span class="chip thread">Thread</span>
+                    <span class="chip thread">Concurrency</span>
+                    <span class="chip process">Process</span>
+                </div>
+                <p>
+                    A thread is the OS's unit of CPU scheduling. A process always has at least one thread (the main thread). Additional threads can be created within the same process, and they all share the same virtual address space, file descriptors, and other process-wide resources. What each thread owns privately is a separate stack, a set of CPU registers (including its own program counter), and thread-local storage.
+                </p>
+                <p>
+                    This sharing is what makes threads cheaper than processes. Creating a second thread does not require a new page table or a new set of file descriptors. Context-switching between two threads of the same process does not require a TLB flush because the virtual-to-physical mapping stays the same. The kernel just saves one thread's register state and restores another's. The trade-off is that threads within a process are not isolated from each other. A bug in one thread can corrupt memory visible to all threads in that process.
+                </p>
+                <div class="diagram">
+                    <pre>
+  Process (PID 5500)
+ ┌────────────────────────────────────────────────────┐
+ │  Shared: code, data, heap, file descriptors, PID   │
+ │                                                     │
+ │  Thread 1            Thread 2            Thread 3   │
+ │ ┌──────────┐       ┌──────────┐       ┌──────────┐ │
+ │ │ Stack    │       │ Stack    │       │ Stack    │ │
+ │ │ Registers│       │ Registers│       │ Registers│ │
+ │ │ PC       │       │ PC       │       │ PC       │ │
+ │ │ TLS      │       │ TLS      │       │ TLS      │ │
+ │ └──────────┘       └──────────┘       └──────────┘ │
+ └────────────────────────────────────────────────────┘</pre>
+                    <p class="diagram-caption">Three threads inside one process share address space but have private stacks, registers, and TLS.</p>
+                </div>
+                <div class="example-box">
+                    <strong>Example:</strong> A Java application server handles incoming HTTP requests. Each request is dispatched to a thread from a thread pool. All threads share the same JVM heap (where cached data and connection pools live), but each thread has its own call stack. This avoids the enormous overhead of forking a new process per request.
+                </div>
+            </article>
+
+            <article class="guide-card" id="thread-sharing">
+                <h3>What Threads Share (and What They Don't)</h3>
+                <div class="guide-meta">
+                    <span class="chip thread">Shared state</span>
+                    <span class="chip thread">Private state</span>
+                </div>
+
+                <table class="cmp-table">
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Shared across threads?</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Code (text segment)</td><td>Yes</td><td>All threads execute from the same binary.</td></tr>
+                        <tr><td>Global / static variables</td><td>Yes</td><td>Source of most race conditions.</td></tr>
+                        <tr><td>Heap</td><td>Yes</td><td><code>malloc</code>/<code>new</code> returns addresses visible to all threads.</td></tr>
+                        <tr><td>File descriptors</td><td>Yes</td><td>One thread can close a socket another thread is reading.</td></tr>
+                        <tr><td>PID, UID, signal handlers</td><td>Yes</td><td>Process-level identity is shared.</td></tr>
+                        <tr><td>Stack</td><td>No</td><td>Each thread has its own stack (typically 1–8 MB).</td></tr>
+                        <tr><td>Registers / Program counter</td><td>No</td><td>Saved and restored on context switch.</td></tr>
+                        <tr><td>Thread-local storage (TLS)</td><td>No</td><td><code>__thread</code> in C, <code>ThreadLocal</code> in Java.</td></tr>
+                        <tr><td>Signal mask (Linux)</td><td>No</td><td>Each thread can block different signals.</td></tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    The shared heap and shared globals are both the strength and the danger of multithreading. They allow efficient data sharing without copies. But they also mean that any thread can write to any shared location at any time. Without explicit synchronization, this leads to data races, torn reads, and heisenbugs that are notoriously difficult to reproduce and diagnose. That is why thread synchronization primitives exist, and we cover them in the IPC section below.
+                </p>
+            </article>
+        </section>
+
+        <!-- ════════════════════ 3. LIGHTWEIGHT THREADS ════════════════════ -->
+        <section class="guide-section" id="lwt">
+            <div class="section-header">
+                <div>
+                    <h2>3. Lightweight / User-Level Threads</h2>
+                    <p>Threads managed in user space, multiplexed onto fewer kernel threads.</p>
+                </div>
+            </div>
+
+            <article class="guide-card" id="lwt-models">
+                <h3>Threading Models: N:1, 1:1, and M:N</h3>
+                <div class="guide-meta">
+                    <span class="chip lwt">Green threads</span>
+                    <span class="chip lwt">Fibers</span>
+                    <span class="chip lwt">Coroutines</span>
+                </div>
+                <p>
+                    The term "lightweight thread" refers to a thread whose creation, destruction, and scheduling are managed primarily in user space rather than by the kernel. The idea is simple: kernel thread operations involve system calls, which involve a privilege-level transition (user mode to kernel mode), which is expensive relative to a plain function call. If we can schedule thousands of logical tasks without making thousands of system calls, we gain efficiency.
+                </p>
+                <p>
+                    There are three classical models for mapping user-level threads (U) to kernel threads (K):
+                </p>
+
+                <div class="diagram">
+                    <pre>
+  N:1 (Many-to-One)          1:1 (One-to-One)          M:N (Many-to-Many)
+
+  U1 U2 U3 ... Un            U1  U2  U3  Un            U1 U2 U3 U4 U5 U6
+   \  |  |  /                 |   |   |   |              \  |  /  \  |  /
+    \ | | /                   |   |   |   |               \ | /    \ | /
+  ┌─────────┐             ┌───┐┌───┐┌───┐┌───┐          ┌─────┐  ┌─────┐
+  │  K1     │             │K1 ││K2 ││K3 ││Kn │          │ K1  │  │ K2  │
+  └─────────┘             └───┘└───┘└───┘└───┘          └─────┘  └─────┘
+
+  - All user threads on      - Each user thread       - User-level scheduler
+    one kernel thread           maps to one kernel       multiplexes M user
+  - No true parallelism         thread                   threads onto N kernel
+  - One blocks → all block    - True parallelism         threads
+                              - Higher kernel overhead  - Best of both worlds
+                                                        - Most complex to build</pre>
+                    <p class="diagram-caption">The three classical user-to-kernel thread mapping models.</p>
+                </div>
+
+                <p>
+                    <strong>N:1</strong> was used by early Java (green threads before JDK 1.2) and early Ruby. It is simple, but one blocking system call blocks all user threads because the single kernel thread is stuck. <strong>1:1</strong> is what Linux pthreads and Windows threads use today: each user thread is backed by a kernel thread, giving true parallelism on multicore CPUs. The cost is that creating 100,000 threads means 100,000 kernel objects and 100,000 stacks, which may use gigabytes of memory. <strong>M:N</strong> multiplexes many user-level threads onto a smaller pool of kernel threads, offering parallelism without the per-thread kernel overhead. It is the model used by Go goroutines, Erlang processes, and Java's Project Loom virtual threads.
+                </p>
+
+                <div class="example-box">
+                    <strong>Example:</strong> A Go web server can handle 500,000 concurrent goroutines. Each goroutine has a tiny initial stack (a few KB, grown on demand). The Go runtime schedules these goroutines onto a pool of OS threads equal to <code>GOMAXPROCS</code> (typically the number of CPU cores). This M:N model is why Go excels at massively concurrent network services.
+                </div>
+            </article>
+
+            <article class="guide-card" id="lwt-modern">
+                <h3>Modern Green-Thread Runtimes</h3>
+                <div class="guide-meta">
+                    <span class="chip lwt">Go goroutines</span>
+                    <span class="chip lwt">Java virtual threads</span>
+                    <span class="chip lwt">Erlang processes</span>
+                    <span class="chip lwt">Rust async/await</span>
+                </div>
+                <p>
+                    Modern runtimes refine the M:N model with cooperative or hybrid scheduling. In Go, goroutines yield at certain safe points (function calls, channel operations, system calls) so the runtime's scheduler can switch between them without a system call. When a goroutine would block on I/O, the runtime parks it and reuses the underlying OS thread for another goroutine. This means blocking I/O does not waste an OS thread.
+                </p>
+                <p>
+                    Java's Project Loom (production since JDK 21) introduces virtual threads. A virtual thread looks like a normal <code>java.lang.Thread</code> but is backed by a continuation that the JVM can mount and unmount from carrier (platform) threads. You can create millions of virtual threads. When one blocks on <code>socket.read()</code>, the JVM unmounts its continuation from the carrier thread and schedules another virtual thread onto it. The programming model is synchronous blocking code, but the runtime achieves the efficiency of asynchronous I/O.
+                </p>
+                <div class="diagram">
+                    <pre>
+  Java Virtual Threads (Project Loom):
+
+  Virtual Thread 1  ─┐
+  Virtual Thread 2  ─┤  mounted/unmounted by JVM scheduler
+  Virtual Thread 3  ─┤
+      ...            │
+  Virtual Thread N  ─┘
+                      ▼
+           ┌──────────────────┐
+           │ Carrier Thread   │  (small pool of OS threads)
+           │ Pool (ForkJoin)  │
+           └──────────────────┘
+
+  When VT blocks on I/O → unmounted, carrier freed for another VT
+  When I/O completes   → VT re-mounted on any available carrier</pre>
+                    <p class="diagram-caption">Virtual threads are scheduled by the JVM, not the OS. Blocking I/O does not waste an OS thread.</p>
+                </div>
+                <p>
+                    Erlang takes a different extreme. Every Erlang "process" is a lightweight user-space entity with its own tiny heap. Erlang processes do not share memory at all. They communicate exclusively by message passing. The BEAM VM schedules these processes across OS threads with preemptive reduction counting (each process gets a fixed number of reductions before being preempted). This model trades shared-memory performance for absolute isolation and fault tolerance, which is why Erlang dominates telecom and messaging systems.
+                </p>
+                <p>
+                    Rust's <code>async</code>/<code>await</code> model is yet another approach. Rust futures are state machines compiled by the compiler. An async runtime like Tokio polls these futures on a thread pool. There are no green thread stacks at all. Each future is an enum that stores only the state needed at each <code>.await</code> point. This is extremely memory efficient but requires the programmer to use <code>async</code> annotations pervasively.
+                </p>
+            </article>
+        </section>
+
+        <!-- ════════════════════ 4. IPC ════════════════════ -->
+        <section class="guide-section" id="ipc">
+            <div class="section-header">
+                <div>
+                    <h2>4. Inter-Process &amp; Inter-Thread Communication</h2>
+                    <p>How isolated processes and co-resident threads exchange data and coordinate.</p>
+                </div>
+            </div>
+
+            <article class="guide-card" id="ipc-mechanisms">
+                <h3>IPC Mechanisms</h3>
+                <div class="guide-meta">
+                    <span class="chip ipc">Pipes</span>
+                    <span class="chip ipc">Shared memory</span>
+                    <span class="chip ipc">Sockets</span>
+                    <span class="chip ipc">Message queues</span>
+                    <span class="chip ipc">Signals</span>
+                </div>
+                <p>
+                    Because processes have isolated address spaces, they need explicit OS-mediated mechanisms to communicate. There is no single best IPC mechanism. Each represents a different trade-off between latency, throughput, complexity, and whether the communicating processes are on the same machine.
+                </p>
+
+                <p><strong>Pipes</strong> are the simplest IPC mechanism. A pipe is a unidirectional byte stream: one process writes, another reads. Named pipes (FIFOs) allow unrelated processes to communicate via a filesystem path. Pipes are excellent for producer-consumer patterns and are the backbone of the Unix shell pipeline model (<code>ls | grep foo | wc -l</code>).</p>
+
+                <p><strong>Shared memory</strong> is the fastest IPC mechanism because it eliminates copying. Two processes map the same physical page into their respective virtual address spaces. Once mapped, reads and writes appear as normal memory operations with no system call overhead. The danger is that shared memory requires explicit synchronization (semaphores or mutexes) to avoid races. It is the mechanism of choice for high-performance systems like database buffer pools and real-time audio processing.</p>
+
+                <div class="diagram">
+                    <pre>
+  Process A                              Process B
+ ┌────────────────┐                     ┌────────────────┐
+ │ Virtual page 7  │────┐          ┌────│ Virtual page 3  │
+ └────────────────┘     │          │    └────────────────┘
+                        ▼          ▼
+                   ┌────────────────────┐
+                   │  Physical frame 42 │   ← same physical memory
+                   └────────────────────┘
+
+  A writes to its virtual page 7 → B sees the change at its virtual page 3
+  No copies, no system calls for the data transfer itself
+  But: synchronization (mutex, semaphore) is required</pre>
+                    <p class="diagram-caption">Shared memory maps the same physical frame into two processes' virtual address spaces.</p>
+                </div>
+
+                <p><strong>Message queues</strong> (POSIX <code>mq_*</code> or System V <code>msgget</code>/<code>msgsnd</code>) provide structured message passing through the kernel. They add framing (each message has a boundary and optionally a type) at the cost of kernel copies. They are useful when you want decoupled, typed communication without managing raw byte streams.</p>
+
+                <p><strong>Sockets</strong> generalize pipes to bidirectional communication and work across machines. Unix domain sockets provide fast local IPC (no network stack overhead), while TCP/UDP sockets enable network-transparent communication. Almost all modern distributed systems communicate via sockets.</p>
+
+                <p><strong>Signals</strong> are asynchronous notifications delivered to a process. They are not a data-transfer mechanism. A signal tells a process that an event happened (e.g., SIGTERM for termination, SIGCHLD when a child exits). Signal handling is tricky because signals can arrive at any point during execution, making reentrancy a concern.</p>
+
+                <div class="example-box">
+                    <strong>Example:</strong> PostgreSQL uses shared memory for its buffer pool (so all backend processes can access cached pages) and uses Unix domain sockets for client-server communication. It uses signals internally for coordination (e.g., SIGHUP to reload configuration). This combination is typical of production database systems.
+                </div>
+            </article>
+
+            <article class="guide-card" id="thread-sync">
+                <h3>Thread Synchronization Primitives</h3>
+                <div class="guide-meta">
+                    <span class="chip thread">Mutex</span>
+                    <span class="chip thread">Condition variable</span>
+                    <span class="chip thread">Semaphore</span>
+                    <span class="chip thread">Read-write lock</span>
+                    <span class="chip thread">Atomic operations</span>
+                </div>
+                <p>
+                    Threads within a process share memory, so they do not need IPC. But they do need synchronization to avoid data races. The fundamental primitives are:
+                </p>
+                <p>
+                    <strong>Mutex (mutual exclusion lock)</strong> — ensures only one thread can enter a critical section at a time. A thread that tries to lock an already-locked mutex blocks until the owner releases it. This is the workhorse of thread-safe programming.
+                </p>
+                <p>
+                    <strong>Condition variable</strong> — allows a thread to block until some condition becomes true, without busy-waiting. A thread locks the mutex, checks the condition, and if it is false, calls <code>wait()</code>, which atomically releases the mutex and puts the thread to sleep. Another thread signals the condition variable when it makes the condition true.
+                </p>
+                <div class="diagram">
+                    <pre>
+  Producer-Consumer with mutex + condition variable:
+
+  Producer:                         Consumer:
+    lock(mutex)                       lock(mutex)
+    buffer.push(item)                 while buffer.empty():
+    signal(not_empty)                     wait(not_empty, mutex)  ← releases mutex, sleeps
+    unlock(mutex)                     item = buffer.pop()
+                                      unlock(mutex)
+                                      process(item)</pre>
+                    <p class="diagram-caption">The classic bounded-buffer pattern using a mutex and a condition variable.</p>
+                </div>
+                <p>
+                    <strong>Semaphore</strong> — a generalized counter. A binary semaphore acts like a mutex. A counting semaphore limits the number of threads that can enter a section simultaneously (e.g., limiting to N concurrent database connections). <strong>Read-write locks</strong> allow multiple concurrent readers but exclusive writers. <strong>Atomic operations</strong> (compare-and-swap, fetch-and-add) enable lock-free data structures for the highest-performance scenarios, but they are significantly harder to reason about correctly.
+                </p>
+                <div class="example-box">
+                    <strong>Example:</strong> A connection pool in a web server uses a counting semaphore initialized to the pool size (say 20). Each thread that needs a connection calls <code>sem_wait()</code>, decrementing the counter. If the counter reaches zero, subsequent threads block until a connection is returned via <code>sem_post()</code>. This naturally throttles concurrency to available resources.
+                </div>
+            </article>
+        </section>
+
+        <!-- ════════════════════ 5. WINDOWS vs LINUX ════════════════════ -->
+        <section class="guide-section" id="windows-vs-linux">
+            <div class="section-header">
+                <div>
+                    <h2>5. Windows vs. Linux Process Models</h2>
+                    <p>Concrete implementation differences between the two dominant OS families.</p>
+                </div>
+            </div>
+
+            <article class="guide-card" id="creation">
+                <h3>Process Creation: fork() vs. CreateProcess()</h3>
+                <div class="guide-meta">
+                    <span class="chip os">Linux</span>
+                    <span class="chip os">Windows</span>
+                    <span class="chip process">Process creation</span>
+                </div>
+                <p>
+                    Linux and Windows take fundamentally different approaches to creating a new process.
+                </p>
+                <p>
+                    On Linux (and all POSIX systems), the model is <strong>fork + exec</strong>. <code>fork()</code> creates an exact copy of the calling process: same code, same data, same open files. The child is a clone of the parent. The child then typically calls <code>exec()</code> to replace its own memory image with a new program. This two-step model is elegant and composable. Between the fork and the exec, the child can set up redirections, close unwanted file descriptors, change directories, or drop privileges. Modern Linux implements <code>fork()</code> with copy-on-write (COW): the parent and child initially share the same physical pages, and pages are duplicated only when either process writes to them. This makes fork very cheap if the child calls exec immediately.
+                </p>
+                <p>
+                    Windows has no <code>fork()</code>. Instead, it uses <code>CreateProcess()</code>, which creates a new process and loads a program into it in a single call. All parameters (the executable path, command-line arguments, environment, security attributes, I/O handles to inherit) must be specified upfront. This is more explicit but less composable. The Windows model avoids the conceptual complexity of a forked child that has a copy of the parent's entire state (including locks, threads, and memory-mapped regions), which can be dangerous in multithreaded programs.
+                </p>
+                <div class="diagram">
+                    <pre>
+  Linux:                                  Windows:
+
+  parent                                  parent
+    │                                       │
+    ├─ fork() → child (clone of parent)     ├─ CreateProcess("app.exe", ...)
+    │             │                         │        │
+    │             ├─ setup (redirects,      │        └─ new process with
+    │             │   close fds, chdir)     │           app.exe loaded
+    │             │                         │           (no intermediate
+    │             └─ exec("app")            │            clone state)
+    │                  │                    │
+    │               app running             │       app.exe running
+    ▼                                       ▼</pre>
+                    <p class="diagram-caption">Linux separates cloning from program loading. Windows combines them into one call.</p>
+                </div>
+                <div class="example-box">
+                    <strong>Example:</strong> Shell pipelines like <code>cat file | grep pattern</code> rely on fork+exec. The shell forks, sets up a pipe between the child processes, and each child execs a different program. On Windows, achieving the same requires explicit handle inheritance and explicit pipe setup in the <code>CreateProcess</code> call's <code>STARTUPINFO</code> structure.
+                </div>
+            </article>
+
+            <article class="guide-card" id="thread-impl">
+                <h3>Thread Implementation Differences</h3>
+                <div class="guide-meta">
+                    <span class="chip os">Linux clone()</span>
+                    <span class="chip os">Windows ETHREAD</span>
+                    <span class="chip thread">1:1 model</span>
+                </div>
+                <p>
+                    Both modern Linux and Windows use a 1:1 threading model, but the internal implementation differs significantly.
+                </p>
+                <p>
+                    Linux does not have a separate "thread" abstraction in the kernel. Instead, it has <code>clone()</code>, a generalized system call that creates a new task. The flags you pass to <code>clone()</code> determine what the new task shares with the parent: <code>CLONE_VM</code> shares the address space, <code>CLONE_FILES</code> shares file descriptors, <code>CLONE_SIGHAND</code> shares signal handlers. A "thread" is simply a <code>clone()</code> call with all sharing flags set. A "process" is a <code>clone()</code> call with no sharing (or a <code>fork()</code>, which is essentially <code>clone()</code> with no sharing flags). This means the Linux kernel treats processes and threads as the same kind of object (a <code>task_struct</code>), just with different sharing configurations.
+                </p>
+                <p>
+                    Windows has a distinct object hierarchy. A process is represented by an <code>EPROCESS</code> kernel structure. Each thread within it is represented by an <code>ETHREAD</code> structure. Processes and threads are fundamentally different object types. The Windows scheduler dispatches threads, not processes. Each thread has its own Thread Environment Block (TEB), and the process has a Process Environment Block (PEB). This explicit separation makes certain operations (like suspending all threads in a process) straightforward in Windows.
+                </p>
+                <div class="diagram">
+                    <pre>
+  Linux kernel view:                     Windows kernel view:
+
+  task_struct (TID 100)                  EPROCESS (PID 200)
+    flags: CLONE_VM | CLONE_FILES          ├── ETHREAD (TID 201)
+                                           ├── ETHREAD (TID 202)
+  task_struct (TID 101)                    └── ETHREAD (TID 203)
+    flags: CLONE_VM | CLONE_FILES
+                                         Processes and threads are
+  Both are task_structs sharing           separate kernel objects.
+  the same mm_struct (address space).
+  The kernel does not distinguish
+  "thread" from "process" internally.</pre>
+                    <p class="diagram-caption">Linux unifies processes and threads as task_structs. Windows separates them into EPROCESS and ETHREAD.</p>
+                </div>
+            </article>
+
+            <article class="guide-card" id="ipc-os">
+                <h3>IPC Across Windows and Linux</h3>
+                <div class="guide-meta">
+                    <span class="chip os">Linux</span>
+                    <span class="chip os">Windows</span>
+                    <span class="chip ipc">IPC</span>
+                </div>
+
+                <table class="cmp-table">
+                    <thead>
+                        <tr>
+                            <th>Mechanism</th>
+                            <th>Linux</th>
+                            <th>Windows</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Pipes</td>
+                            <td><code>pipe()</code>, named FIFOs via <code>mkfifo</code></td>
+                            <td>Anonymous pipes, named pipes (<code>\\.\pipe\name</code>)</td>
+                        </tr>
+                        <tr>
+                            <td>Shared memory</td>
+                            <td>POSIX <code>shm_open</code> + <code>mmap</code>, System V <code>shmget</code></td>
+                            <td><code>CreateFileMapping</code> + <code>MapViewOfFile</code></td>
+                        </tr>
+                        <tr>
+                            <td>Sockets</td>
+                            <td>Unix domain sockets, TCP/UDP</td>
+                            <td>TCP/UDP, named pipes often preferred for local IPC</td>
+                        </tr>
+                        <tr>
+                            <td>Message queues</td>
+                            <td>POSIX <code>mq_*</code>, System V <code>msgget</code></td>
+                            <td>No direct equivalent; mailslots or COM for structured messages</td>
+                        </tr>
+                        <tr>
+                            <td>Signals</td>
+                            <td>Full POSIX signal model (SIGUSR1, SIGTERM, etc.)</td>
+                            <td>Limited: console control events, structured exception handling</td>
+                        </tr>
+                        <tr>
+                            <td>Synchronization objects</td>
+                            <td>Futexes, POSIX semaphores, file locks</td>
+                            <td>Named mutexes, events, semaphores (cross-process by name)</td>
+                        </tr>
+                        <tr>
+                            <td>Remote / high-level</td>
+                            <td>D-Bus, gRPC, Unix sockets</td>
+                            <td>COM/DCOM, WCF, named pipes, ALPC (internal)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    A notable Windows-specific mechanism is <strong>ALPC (Advanced Local Procedure Call)</strong>, an internal kernel mechanism used heavily by Windows services and the window manager. It is roughly analogous to a high-performance local RPC. On the Linux side, <strong>D-Bus</strong> serves a similar role for desktop service coordination, though it runs in user space over Unix sockets rather than being a kernel primitive.
+                </p>
+                <div class="example-box">
+                    <strong>Example:</strong> On Windows, named pipes are the idiomatic way for a service to expose a local IPC endpoint (e.g., Docker Engine on Windows listens on <code>\\.\pipe\docker_engine</code>). On Linux, the same role is typically served by a Unix domain socket (e.g., <code>/var/run/docker.sock</code>). Both achieve fast local communication, but the API surface and naming conventions differ completely.
+                </div>
+            </article>
+        </section>
+
+        <!-- ════════════════════ SUMMARY TABLE ════════════════════ -->
+        <section class="guide-section" id="summary">
+            <div class="section-header">
+                <div>
+                    <h2>Summary Comparison</h2>
+                    <p>A single table comparing processes, kernel threads, and lightweight threads across key dimensions.</p>
+                </div>
+            </div>
+
+            <article class="guide-card">
+                <table class="cmp-table">
+                    <thead>
+                        <tr>
+                            <th>Dimension</th>
+                            <th>Process</th>
+                            <th>Kernel Thread</th>
+                            <th>Lightweight Thread</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Address space</td>
+                            <td>Own (isolated)</td>
+                            <td>Shared with parent process</td>
+                            <td>Shared with parent process</td>
+                        </tr>
+                        <tr>
+                            <td>Creation cost</td>
+                            <td>High (page tables, fd tables)</td>
+                            <td>Moderate (stack, registers, kernel object)</td>
+                            <td>Very low (small stack, user-space bookkeeping)</td>
+                        </tr>
+                        <tr>
+                            <td>Context switch cost</td>
+                            <td>High (TLB flush, page table swap)</td>
+                            <td>Moderate (register save/restore, no TLB flush within same process)</td>
+                            <td>Low (user-space stack swap, no syscall)</td>
+                        </tr>
+                        <tr>
+                            <td>Parallelism</td>
+                            <td>Yes (multiple cores)</td>
+                            <td>Yes (multiple cores)</td>
+                            <td>Yes if M:N (limited by kernel thread pool size)</td>
+                        </tr>
+                        <tr>
+                            <td>Isolation</td>
+                            <td>Strong (hardware-enforced)</td>
+                            <td>Weak (shared address space)</td>
+                            <td>Weak (shared address space)</td>
+                        </tr>
+                        <tr>
+                            <td>Crash behavior</td>
+                            <td>One crash does not affect others</td>
+                            <td>One crash can kill the entire process</td>
+                            <td>Same as kernel threads</td>
+                        </tr>
+                        <tr>
+                            <td>Communication</td>
+                            <td>Requires IPC (pipes, shmem, sockets)</td>
+                            <td>Direct memory access (needs sync)</td>
+                            <td>Direct memory or channels (runtime-dependent)</td>
+                        </tr>
+                        <tr>
+                            <td>Scalability</td>
+                            <td>Hundreds to thousands</td>
+                            <td>Thousands to tens of thousands</td>
+                            <td>Millions (Go goroutines, Erlang procs)</td>
+                        </tr>
+                        <tr>
+                            <td>Scheduled by</td>
+                            <td>OS kernel</td>
+                            <td>OS kernel</td>
+                            <td>User-space runtime (cooperative or hybrid)</td>
+                        </tr>
+                        <tr>
+                            <td>Typical stack size</td>
+                            <td>8 MB (Linux default)</td>
+                            <td>1–8 MB</td>
+                            <td>2–8 KB (growable)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+        </section>
+
+        <!-- ════════════════════ FOOTER ════════════════════ -->
+        <section class="footer-card">
+            <h2>Key Takeaways</h2>
+            <ol>
+                <li>A <strong>process</strong> is the unit of isolation. Use multiple processes when crashes must not propagate.</li>
+                <li>A <strong>kernel thread</strong> is the unit of CPU scheduling. Use threads when tasks share data and need parallelism.</li>
+                <li><strong>Lightweight threads</strong> (goroutines, virtual threads, Erlang processes) let you scale to millions of concurrent tasks without millions of kernel objects.</li>
+                <li><strong>IPC</strong> is required between processes because they don't share memory. Shared memory is fastest but requires careful synchronization.</li>
+                <li>Linux unifies processes and threads via <code>clone()</code>. Windows separates them into <code>EPROCESS</code> and <code>ETHREAD</code>. Both use a 1:1 kernel threading model today.</li>
+                <li>Linux creates processes with <strong>fork+exec</strong> (composable, COW-optimized). Windows uses <strong>CreateProcess</strong> (explicit, single-step).</li>
+                <li>The right choice depends on the workload: isolation needs, concurrency level, latency sensitivity, and the language runtime's capabilities.</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>

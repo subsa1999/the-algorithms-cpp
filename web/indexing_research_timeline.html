@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top Research Papers in Indexing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="layout-article accent-teal">
+    <main class="page">
+        <nav class="back-nav"><a href="index.html">← Back to Paperwork</a></nav>
+        <section class="hero">
+            <span class="eyebrow">Computer Science • Algorithms • Indexing</span>
+            <h1>Top Research Papers in Indexing</h1>
+            <p class="subtitle">
+                A compact research map of seminal indexing papers across database systems,
+                spatial indexing, full-text search, compressed text indexes, and survey work.
+                This page also includes a timeline showing how indexing research evolved from
+                classic disk-based structures to compressed and write-optimized indexes.
+            </p>
+
+            <div class="hero-grid">
+                <article class="callout">
+                    <h2>How to use this page</h2>
+                    <p>
+                        If you care about database systems first, start with B-trees, LSM-trees,
+                        GiST, R-trees, and bitmap indexes. If your focus is string algorithms or
+                        search, start with suffix trees, suffix arrays, FM-indexes, and compressed
+                        suffix arrays.
+                    </p>
+                </article>
+
+                <div class="stats">
+                    <article class="stat-card">
+                        <strong>15</strong>
+                        <span>Seminal papers included</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>1972</strong>
+                        <span>Starting point of this timeline</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>5</strong>
+                        <span>Research streams shown, including one survey track</span>
+                    </article>
+                    <article class="stat-card">
+                        <strong>3</strong>
+                        <span>Best entry points for beginners: B-tree, suffix array, LSM-tree</span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <nav class="toc" id="toc">
+            <h2>Contents</h2>
+            <ol>
+                <li>
+                    <a href="#index-families">Index Families Explained</a>
+                    <ol>
+                        <li><a href="#database-indexes">Database Indexes: B-trees, B+ trees, GiST, LSM-trees, and Bitmap Indexes</a></li>
+                        <li><a href="#spatial-indexes">Spatial Indexes: R-trees and the Problem of Searching Geometry</a></li>
+                        <li><a href="#text-indexes">Text and String Indexes: Suffix Trees, Suffix Arrays, and Inverted Indexes</a></li>
+                        <li><a href="#compressed-indexes">Compressed Indexes: FM-indexes and Compressed Suffix Arrays</a></li>
+                    </ol>
+                </li>
+                <li><a href="#research-timeline">Research Timeline</a></li>
+                <li><a href="#reading-order">Suggested Reading Order</a></li>
+            </ol>
+        </nav>
+
+        <section class="guide-section" id="index-families">
+            <div class="section-header">
+                <div>
+                    <h2>Index Families Explained</h2>
+                    <p>
+                        The sections below are designed to be correct, example driven, and diagram driven. They focus on what each family of indexes is trying to optimize, what the core data structure looks like, and where it wins or loses in real systems.
+                    </p>
+                </div>
+            </div>
+
+            <article class="guide-card" id="database-indexes">
+                <h3>1. Database Indexes: B-trees, B+ trees, GiST, LSM-trees, and Bitmap Indexes</h3>
+                <div class="guide-meta">
+                    <span class="chip database">Database</span>
+                    <span class="chip database">Ordered access</span>
+                    <span class="chip database">Range queries</span>
+                    <span class="chip database">Transactional systems</span>
+                </div>
+                <p>
+                    Database indexing begins with a practical constraint rather than a purely mathematical one: storage is slow, memory is limited, and random I/O is expensive. A database index is therefore not just a way to order keys. It is a strategy for reducing the number of storage pages that must be touched in order to answer a query. That single design pressure explains why B-trees became dominant. A binary search tree has low comparison complexity in theory, but if each node lives on a different disk page, then a deep tree becomes expensive. A B-tree uses high fan-out instead. One internal node can hold many separator keys and many child pointers, so a search descends only a few levels before reaching the target page.
+                </p>
+                <p>
+                    The classic example is an employee table indexed by employee ID. Instead of comparing against one key per node, the root page may contain dozens or hundreds of keys, each carving the key space into broad intervals. The search path becomes short, stable, and page oriented. B+ trees refine the same idea by keeping data records only in the leaves, which makes internal nodes denser and therefore even shallower. This is why production relational systems typically prefer B+ tree variants over textbook B-trees. Internal pages are optimized for navigation. Leaf pages are optimized for storage and sequential scans. Once a query reaches the first leaf in a range, it can follow leaf-to-leaf links to continue scanning with minimal overhead.
+                </p>
+                <div class="diagram">
+                    <pre>                 [ 20 | 40 | 70 ]
+                /       |      |       \
+      [ 1..19 ]  [20..39] [40..69] [70..99]
+
+Leaf pages in a B+ tree:
+
+[ 01 05 11 18 ] -> [ 20 22 31 38 ] -> [ 40 44 51 67 ] -> [ 70 72 83 95 ]
+
+Point lookup:
+  search 44 -> root interval 40..69 -> leaf [40 44 51 67]
+
+Range query:
+  search 22..67 -> first matching leaf, then scan linked leaves forward</pre>
+                </div>
+                <div class="example-box">
+                    <strong>Example:</strong> Suppose a payroll table stores 50 million rows and the query is “find all salaries for employee IDs from 400000 to 420000.” A hash index is good at exact lookup, but it does not preserve order. A B+ tree can find the first matching leaf and then perform an efficient range scan across adjacent leaves.
+                </div>
+                <p>
+                    GiST generalizes the idea of a balanced search tree. Instead of saying that every node must behave like an ordered set of scalar keys, GiST says the system should provide a framework in which different notions of “consistency,” “union,” “penalty,” and “split” can be plugged in. This matters because many real data types are not simple integers or strings. Geometric objects, document signatures, interval values, and custom domain-specific objects often need specialized search semantics. GiST does not replace B+ trees conceptually; it provides a general infrastructure for implementing index families that can still live inside a database engine with concurrency control and recovery.
+                </p>
+                <p>
+                    LSM-trees attack a different bottleneck. B-tree families are excellent when a system needs balanced lookup and range behavior with moderate writes. But if the workload is dominated by heavy inserts and updates, random page rewrites become costly. LSM-trees buffer writes in memory, flush them sequentially to disk as sorted runs, and later merge those runs in the background. This reduces write amplification from small random updates at the page level, trading it for compaction work and more complicated reads. In systems like log storage, time-series ingestion, or write-heavy key-value stores, this trade is often worth it.
+                </p>
+                <div class="diagram">
+                    <pre>LSM-tree write path:
+
+Incoming writes -> Memtable (RAM) -> Flush -> Sorted Run L0 -> Merge/Compaction -> L1 -> L2
+
+Read path:
+  1. Check Memtable
+  2. Check newest sorted runs first
+  3. Use Bloom filters to skip runs that cannot contain the key
+
+Strength:
+  very fast sustained writes
+
+Cost:
+  reads may search multiple levels and background compaction must be managed</pre>
+                </div>
+                <p>
+                    Bitmap indexes serve yet another regime: analytical queries over large tables with repeated low-cardinality attributes. Imagine a retail warehouse with columns such as region, channel, returned flag, and weekday. For each distinct value, a bitmap marks which rows match. Complex conditions then become bitwise operations. If the query asks for all rows where region is East, channel is Online, and returned flag is false, the engine can AND three bitmaps and identify qualifying rows very quickly. The structure is especially powerful in read-mostly systems because compression works well and logical operations are fast on compressed or word-aligned bitmaps.
+                </p>
+                <div class="example-box">
+                    <strong>Example:</strong> In a fact table with 200 million sales records, a bitmap index on the boolean field “promotion_applied” is tiny and extremely selective for analytical reporting. A B-tree can answer the same predicate, but the bitmap can compose naturally with other bitmaps such as region, store type, or quarter.
+                </div>
+                <p>
+                    The main lesson is that “database index” is not one thing. It is a family of engineering answers to different workload shapes. B+ trees dominate mixed read and range workloads. GiST helps when the key type is not naturally one-dimensional. LSM-trees dominate when writes are the bottleneck. Bitmap indexes dominate where predicates are compositional and data is warehouse-like. Choosing correctly is less about abstract asymptotic complexity and more about page layout, update rate, range behavior, compression, and concurrency.
+                </p>
+            </article>
+
+            <article class="guide-card" id="spatial-indexes">
+                <h3>2. Spatial Indexes: R-trees and the Problem of Searching Geometry</h3>
+                <div class="guide-meta">
+                    <span class="chip spatial">Spatial</span>
+                    <span class="chip spatial">Multidimensional</span>
+                    <span class="chip spatial">GIS</span>
+                    <span class="chip spatial">Nearest neighbor</span>
+                </div>
+                <p>
+                    Spatial indexing starts from a problem that breaks ordinary ordered indexes. If the data is a set of rectangles, polygons, road segments, or latitude-longitude points, then there is no single scalar ordering that preserves all proximity relationships. Sorting by x-coordinate alone loses information about y. Sorting by area is even worse. The core challenge is to organize multidimensional objects so that queries can eliminate large parts of the search space quickly without examining every object directly.
+                </p>
+                <p>
+                    R-trees solve this by grouping nearby objects and summarizing each group with a minimum bounding rectangle, often abbreviated MBR. Each internal node stores a set of bounding rectangles and child pointers. A query rectangle, such as “all restaurants within this area,” traverses only children whose MBR intersects the query box. This is a filter-and-refine approach. Internal rectangles are coarse approximations. If a child rectangle does not overlap the query, none of its descendants can possibly match. If it does overlap, the search continues and later refines the result against the true objects.
+                </p>
+                <div class="diagram">
+                    <pre>Query box Q intersects only selected regions:
+
+Root:
+  [R1] [R2] [R3]
+
+If Q intersects R2 and R3, search only those subtrees.
+
+2D intuition:
+
++-----------------------------+
+| R1      | R2 overlaps Q     |
+|         |   +------+        |
+|         |   |  Q   |        |
+|         |   +------+        |
+|-----------------------------|
+| R3 overlaps Q partially     |
++-----------------------------+
+
+R1 is skipped entirely.</pre>
+                </div>
+                <p>
+                    This idea is simple, but the quality of the tree depends heavily on how rectangles are grouped. If sibling rectangles overlap too much or cover large empty regions, the query must descend into many branches, and performance degrades. That is why R-tree research focuses so intensely on split heuristics and bulk loading. The original R-tree introduced dynamic insertion and page splitting, but later work such as the R*-tree improved practical behavior by minimizing overlap and sometimes reinserting entries instead of splitting immediately. The goal is not merely balance. It is balance plus low overlap plus compact covering regions.
+                </p>
+                <div class="example-box">
+                    <strong>Example:</strong> Consider a map application storing every building footprint in a city. A viewport query should return only objects intersecting the user’s current screen. Without a spatial index, the system would test every building polygon. With an R-tree, it first tests query overlap against a handful of directory rectangles, descends only into matching subtrees, and touches a much smaller candidate set.
+                </div>
+                <p>
+                    Spatial indexes also support nearest-neighbor search. Here the query is not “which objects intersect this box?” but rather “which gas station is closest to my current position?” The R-tree can prioritize nodes by minimum possible distance from the query point to each bounding rectangle. A priority queue explores the most promising rectangles first. Whenever the algorithm reaches a true object whose distance is smaller than the remaining candidate rectangles, it can prune aggressively. This makes R-tree families useful not just for window queries but for route planning, map exploration, clustering, and location-based services.
+                </p>
+                <p>
+                    One subtle but important detail is that spatial indexes usually index simplified geometry, not the full object. A polygon may have thousands of vertices, but the directory structure stores only bounding rectangles. That means the tree acts as a fast filter. After candidate objects are found, the system may still need an exact geometric predicate such as point-in-polygon or polygon intersection. This is why spatial indexing often appears together with the phrase “filter and refine.” The index gets the candidate set small enough that exact geometry becomes affordable.
+                </p>
+                <div class="diagram">
+                    <pre>Spatial query pipeline:
+
+1. Index filter:
+   test query box against MBRs
+
+2. Candidate set:
+   buildings A, F, H survive
+
+3. Exact refinement:
+   run full polygon intersection only on A, F, H
+
+This avoids expensive exact geometry on the entire dataset.</pre>
+                </div>
+                <p>
+                    Spatial indexes are therefore best understood as approximate directory structures over geometric data. Their performance depends less on raw tree height and more on geometric quality: overlap, dead space, and locality. This makes them fundamentally different from scalar ordered indexes. A B+ tree search usually follows one path. An R-tree query may follow several paths because geometric regions overlap. Good spatial indexing is about minimizing how often that branching explosion happens.
+                </p>
+                <p>
+                    In practice, this family matters anywhere the data lives in two or more dimensions: geographic information systems, computer-aided design, robotics, game engines, computer vision, and geospatial analytics. The R-tree and R*-tree became foundational not because they are perfect in theory, but because they capture the right compromise between dynamic updates, disk awareness, and geometric pruning.
+                </p>
+            </article>
+
+            <article class="guide-card" id="text-indexes">
+                <h3>3. Text and String Indexes: Suffix Trees, Suffix Arrays, and Inverted Indexes</h3>
+                <div class="guide-meta">
+                    <span class="chip textual">Text Indexing</span>
+                    <span class="chip textual">Pattern matching</span>
+                    <span class="chip textual">Search engines</span>
+                    <span class="chip textual">Bioinformatics</span>
+                </div>
+                <p>
+                    Text indexing divides naturally into two major problem settings. The first is substring search over a single long text or a collection treated as raw strings. The second is term-based document retrieval, where the query is expressed in words rather than arbitrary substrings. Suffix trees and suffix arrays belong to the first setting. Inverted indexes dominate the second. They solve related but distinct problems, and it is a mistake to treat them as interchangeable.
+                </p>
+                <p>
+                    A suffix tree stores every suffix of a string in a compressed trie-like structure. This sounds extravagant, but it gives extremely strong search behavior. If the text is <em>banana$</em>, then the suffixes are <em>banana$</em>, <em>anana$</em>, <em>nana$</em>, <em>ana$</em>, <em>na$</em>, <em>a$</em>, and <em>$</em>. By compressing common prefixes on edges, the structure can answer substring existence queries in time proportional to the pattern length. That was a major breakthrough because it turned many string problems into direct tree traversals rather than repeated rescans of the text.
+                </p>
+                <div class="diagram">
+                    <pre>Text: banana$
+
+Sorted suffixes:
+  $        -> 7
+  a$       -> 6
+  ana$     -> 4
+  anana$   -> 2
+  banana$  -> 1
+  na$      -> 5
+  nana$    -> 3
+
+Substring search for "ana":
+  suffix tree path for a -> n -> a succeeds
+  so "ana" occurs in the text</pre>
+                </div>
+                <p>
+                    The weakness of suffix trees is space. They are powerful, but they are not cheap. Real implementations often require several times the size of the original text. That cost motivated suffix arrays. A suffix array stores the starting positions of suffixes in sorted order, not an explicit tree of nodes and edges. Search then becomes a binary search over the sorted suffixes. With extra support data such as LCP arrays, suffix arrays recover much of the functionality of suffix trees while using substantially less space and often better cache behavior.
+                </p>
+                <div class="example-box">
+                    <strong>Example:</strong> Suppose the text is a chromosome or a very large log file, and the query is “find every occurrence of ACTGGA” or “find every occurrence of ERROR42.” A suffix tree or suffix array treats the text as a character stream and supports arbitrary substring search. That is different from a search engine query like “distributed systems consensus,” which is usually word based and document based.
+                </div>
+                <p>
+                    Inverted indexes answer the search engine style problem. They map each term to the documents, and often positions, in which the term appears. If the collection contains the documents “graph algorithms,” “distributed graph processing,” and “database indexing,” then the posting list for <em>graph</em> might be [doc1, doc2]. A query containing multiple terms becomes posting list intersection, union, ranking, and positional filtering. This structure is vastly more practical than suffix-based structures for web-scale document retrieval because the natural unit of search is often the token rather than the arbitrary substring.
+                </p>
+                <div class="diagram">
+                    <pre>Inverted index example:
+
+graph      -> [doc1, doc2]
+distributed-> [doc2]
+indexing   -> [doc3]
+
+Query: "graph AND distributed"
+  intersect [doc1, doc2] with [doc2]
+  result -> [doc2]
+
+Positional index example:
+consensus -> [(doc7, positions 3, 14), (doc9, position 8)]</pre>
+                </div>
+                <p>
+                    The distinction matters because the semantics differ. A suffix array can answer substring queries such as “find all occurrences of <em>ana</em> in <em>banana</em>.” An inverted index, unless built positionally over characters or k-grams, does not naturally support that query. Conversely, an inverted index is naturally aligned with ranked retrieval over documents, TF-IDF style scoring, phrase queries, Boolean logic, and posting list compression. Search engines therefore center on inverted indexes, sometimes augmented by forward indexes, document statistics, positional data, or specialized sub-indexes.
+                </p>
+                <p>
+                    Another important point is that text indexing is not only for natural language. Bioinformatics relies heavily on string indexes because DNA and proteins are strings over small alphabets. Log analytics uses them for pattern localization. Security analytics uses them for signature search. Plagiarism detection, corpus mining, autocomplete, and computational linguistics all depend on some form of efficient string or token index.
+                </p>
+                <p>
+                    Suffix trees represent the most expressive classical structure. Suffix arrays provide a cleaner and often more practical formulation. Inverted indexes dominate document retrieval. The correct mental model is not “which one is best?” but “what exactly is being searched: arbitrary substrings, or document terms?” Once that question is answered, the structure choice becomes much clearer.
+                </p>
+            </article>
+
+            <article class="guide-card" id="compressed-indexes">
+                <h3>4. Compressed Indexes: FM-indexes and Compressed Suffix Arrays</h3>
+                <div class="guide-meta">
+                    <span class="chip compressed">Compressed Indexing</span>
+                    <span class="chip compressed">Self-indexing</span>
+                    <span class="chip compressed">Entropy-aware</span>
+                    <span class="chip compressed">Large texts</span>
+                </div>
+                <p>
+                    Compressed indexing is one of the most elegant ideas in modern algorithms because it tries to do two things at once that once seemed to be in conflict: compress the data and still allow fast search over it. Classical full-text indexes such as suffix trees and suffix arrays support strong query capabilities, but their space cost can be large. When the dataset is enormous, such as whole genomes or web-scale corpora, index size becomes a first-order systems problem. A compressed index attacks that problem directly.
+                </p>
+                <p>
+                    The FM-index is built around the Burrows-Wheeler Transform, or BWT. The transform rearranges the text so that similar contexts cluster together, making the result highly compressible. The remarkable step is that this transformed representation is not merely compressed data. With the right auxiliary structures, it becomes searchable. In other words, the transformed text plus rank information and a small amount of navigation data acts as a self-index: the text is compressed, but the index can still count and locate pattern occurrences.
+                </p>
+                <div class="diagram">
+                    <pre>High-level FM-index idea:
+
+Text T -> Burrows-Wheeler Transform -> compressed representation
+
+Then add:
+  C[c]   = how many characters are lexicographically smaller than c
+  Occ(c, i) = how many times c appears up to position i
+
+Backward search:
+  process pattern from right to left
+  shrink the suffix interval each step
+
+Result:
+  find all suffixes beginning with the pattern without storing the full suffix tree</pre>
+                </div>
+                <p>
+                    To see why this matters, consider the pattern <em>bra</em> inside <em>abracadabra$</em>. A suffix array would search among sorted suffixes. The FM-index instead keeps an interval of candidate suffixes and updates that interval one character at a time, from the end of the pattern toward the front. The interval narrows as the algorithm uses rank information to jump through the transformed text. This is conceptually different from explicit tree traversal, but it achieves the same core purpose: identify the suffixes that begin with the query pattern.
+                </p>
+                <div class="example-box">
+                    <strong>Example:</strong> Modern DNA read aligners often rely on FM-index style techniques because they need exact or near-exact pattern search over massive reference genomes. A human genome is large enough that a space-hungry classical index can become a serious memory burden. A compressed self-index dramatically changes what is practical.
+                </div>
+                <p>
+                    Compressed suffix arrays pursue the same goal from a slightly different angle. Instead of storing the full suffix array explicitly, they compress it in a way that still supports navigation and pattern matching. The theoretical insight is deep: the index size can be tied to the empirical entropy of the text rather than to a blunt worst-case bound like storing every suffix position naively. This means the structure takes advantage of regularity in the source text. Highly repetitive texts become especially attractive targets.
+                </p>
+                <p>
+                    The phrase <em>self-index</em> is important. In a self-index, the index can substitute for the original text rather than merely point into it. That makes compressed indexes conceptually stronger than “compressed plus an external index.” The compressed representation and the search structure are fused. This fusion is why the FM-index became such a landmark result. It changed the framing of the problem from “store an index over the text” to “let the compressed text itself become the index.”
+                </p>
+                <div class="diagram">
+                    <pre>Classical approach:
+  original text + separate index
+
+Compressed self-index approach:
+  compressed searchable representation
+
+Space trade-off:
+  suffix tree    -> very powerful, high space
+  suffix array   -> simpler, lower space
+  FM-index / CSA -> searchable while near compression bounds</pre>
+                </div>
+                <p>
+                    The main trade-offs are predictable. Compressed indexes usually reduce memory footprint dramatically, but their navigation is more intricate than direct pointer chasing in a tree or direct array access in a suffix array. Constant factors matter. Locality matters. Implementation quality matters. In-memory versus external-memory behavior matters. This is why compressed indexing research includes not only theory papers but also experimental work on construction, navigation, and practical engineering.
+                </p>
+                <p>
+                    These indexes are especially compelling in domains where the collection is huge, patterns are frequent, and memory is precious. Genomics is the canonical example. Large archival text collections are another. Compressed indexes also matter because they pushed a broader algorithmic insight into the mainstream: information-theoretic structure should influence data structure design. A good index should not merely answer queries fast. It should exploit redundancy in the data itself.
+                </p>
+                <p>
+                    The correct way to think about this family is as the convergence of full-text indexing and compression. Classical full-text indexing asked how to search quickly. Compression asked how to store compactly. FM-indexes and compressed suffix arrays show that, with the right mathematics, the same structure can do both.
+                </p>
+            </article>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2 id="research-timeline">Research Timeline</h2>
+                    <p>
+                        Every paper now appears directly in chronological order, so the page reads as a
+                        single research timeline rather than a separate list plus timeline.
+                    </p>
+                </div>
+            </div>
+
+            <div class="timeline-wrap">
+                <aside class="legend">
+                    <h3>Legend</h3>
+                    <ul>
+                        <li><span class="dot database"></span> Database indexing</li>
+                        <li><span class="dot spatial"></span> Spatial indexing</li>
+                        <li><span class="dot textual"></span> Text and string indexing</li>
+                        <li><span class="dot compressed"></span> Compressed indexing</li>
+                        <li><span class="dot survey"></span> Survey and synthesis</li>
+                    </ul>
+                </aside>
+
+                <div class="timeline">
+                    <article class="timeline-card database">
+                        <header>
+                            <h3>Organization and Maintenance of Large Ordered Indexes</h3>
+                            <span class="timeline-year">1972</span>
+                        </header>
+                        <p class="timeline-authors">Rudolf Bayer, Edward M. McCreight</p>
+                        <p>Foundational B-tree paper and the origin of modern disk-based ordered indexing.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1007/BF00288683" target="_blank" rel="noreferrer">DOI</a>
+                            <a href="https://infolab.usc.edu/csci585/Spring2010/den_ar/indexing.pdf" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card textual">
+                        <header>
+                            <h3>Linear Pattern Matching Algorithms</h3>
+                            <span class="timeline-year">1973</span>
+                        </header>
+                        <p class="timeline-authors">Peter Weiner</p>
+                        <p>Origin of suffix-tree-based indexing and one of the landmark results in string algorithms.
+                        </p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1109/SWAT.1973.13" target="_blank" rel="noreferrer">DOI</a>
+                            <a href="https://web.archive.org/web/20160303211939/http://airelles.i3s.unice.fr/files/Weiner.pdf"
+                                target="_blank" rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card textual">
+                        <header>
+                            <h3>A Space-Economical Suffix Tree Construction Algorithm</h3>
+                            <span class="timeline-year">1976</span>
+                        </header>
+                        <p class="timeline-authors">Edward M. McCreight</p>
+                        <p>Cleaner and more practical suffix tree construction, still canonical in indexing literature.
+                        </p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1145/321941.321946" target="_blank" rel="noreferrer">DOI</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card database">
+                        <header>
+                            <h3>Efficient Locking for Concurrent Operations on B-Trees</h3>
+                            <span class="timeline-year">1981</span>
+                        </header>
+                        <p class="timeline-authors">Philip L. Lehman, S. Bing Yao</p>
+                        <p>Classic paper on concurrency control for B-tree indexes in real database systems.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1145/319628.319663" target="_blank" rel="noreferrer">DOI</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card spatial">
+                        <header>
+                            <h3>R-Trees: A Dynamic Index Structure for Spatial Searching</h3>
+                            <span class="timeline-year">1984</span>
+                        </header>
+                        <p class="timeline-authors">Antonin Guttman</p>
+                        <p>Foundational spatial index for rectangles and multidimensional geometric data.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1145/602259.602266" target="_blank" rel="noreferrer">DOI</a>
+                            <a href="http://www-db.deis.unibo.it/courses/SI-LS/papers/Gut84.pdf" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card spatial">
+                        <header>
+                            <h3>The R*-tree: An Efficient and Robust Access Method for Points and Rectangles</h3>
+                            <span class="timeline-year">1990</span>
+                        </header>
+                        <p class="timeline-authors">Norbert Beckmann, Hans-Peter Kriegel, Ralf Schneider, Bernhard
+                            Seeger</p>
+                        <p>The most influential practical refinement of the R-tree family.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1145/93597.98741" target="_blank" rel="noreferrer">DOI</a>
+                            <a href="http://dbs.mathematik.uni-marburg.de/publications/myPapers/1990/BKSS90.pdf"
+                                target="_blank" rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card textual">
+                        <header>
+                            <h3>Suffix Arrays: A New Method for On-Line String Searches</h3>
+                            <span class="timeline-year">1993</span>
+                        </header>
+                        <p class="timeline-authors">Udi Manber, Gene Myers</p>
+                        <p>Introduces suffix arrays, a simpler and more space-efficient alternative to suffix trees.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1137/0222058" target="_blank" rel="noreferrer">DOI</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card database">
+                        <header>
+                            <h3>Generalized Search Trees for Database Systems</h3>
+                            <span class="timeline-year">1995</span>
+                        </header>
+                        <p class="timeline-authors">Joseph M. Hellerstein, Jeffrey F. Naughton, Avi Pfeffer</p>
+                        <p>Introduces GiST, a framework for building extensible tree-based indexes inside database
+                            engines.</p>
+                        <div class="timeline-links">
+                            <a href="http://db.cs.berkeley.edu/papers/vldb95-gist.pdf" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card database">
+                        <header>
+                            <h3>The Log-Structured Merge-Tree (LSM-Tree)</h3>
+                            <span class="timeline-year">1996</span>
+                        </header>
+                        <p class="timeline-authors">Patrick O'Neil, Edward Cheng, Dieter Gawlick, Elizabeth O'Neil</p>
+                        <p>Foundational write-optimized index structure behind many modern key-value stores.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1007/s002360050048" target="_blank" rel="noreferrer">DOI</a>
+                            <a href="https://www.cs.umb.edu/~poneil/lsmtree.pdf" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card database">
+                        <header>
+                            <h3>Bitmap Index Design and Evaluation</h3>
+                            <span class="timeline-year">1998</span>
+                        </header>
+                        <p class="timeline-authors">Chee-Yong Chan, Yannis E. Ioannidis</p>
+                        <p>Classic paper on bitmap indexing tradeoffs, especially for analytical workloads.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1145/276304.276336" target="_blank" rel="noreferrer">DOI</a>
+                            <a href="http://www.comp.nus.edu.sg/~chancy/sigmod98.pdf" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card compressed">
+                        <header>
+                            <h3>Opportunistic Data Structures with Applications</h3>
+                            <span class="timeline-year">2000</span>
+                        </header>
+                        <p class="timeline-authors">Paolo Ferragina, Giovanni Manzini</p>
+                        <p>Introduces the FM-index, the most influential compressed full-text indexing structure.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1109/SFCS.2000.892127" target="_blank" rel="noreferrer">DOI</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card compressed">
+                        <header>
+                            <h3>High-Order Entropy-Compressed Text Indexes</h3>
+                            <span class="timeline-year">2003</span>
+                        </header>
+                        <p class="timeline-authors">Roberto Grossi, Ankur Gupta, Jeffrey Scott Vitter</p>
+                        <p>Major step toward high-order entropy-bounded self-indexes.</p>
+                        <div class="timeline-links">
+                            <a href="https://kuscholarworks.ku.edu/bitstream/handle/1808/7192/vitter_2003.pdf?sequence=1"
+                                target="_blank" rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card compressed">
+                        <header>
+                            <h3>Indexing Compressed Text</h3>
+                            <span class="timeline-year">2005</span>
+                        </header>
+                        <p class="timeline-authors">Paolo Ferragina, Giovanni Manzini</p>
+                        <p>Journal treatment of FM-index ideas and a standard reference for compressed text indexing.
+                        </p>
+                        <div class="timeline-links">
+                            <a href="https://web.cs.ucdavis.edu/~gusfield/cs224f11/ferragina2005.pdf" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card compressed">
+                        <header>
+                            <h3>Compressed Suffix Arrays and Suffix Trees, with Applications to Text Indexing and String
+                                Matching</h3>
+                            <span class="timeline-year">2005</span>
+                        </header>
+                        <p class="timeline-authors">Roberto Grossi, Jeffrey Scott Vitter</p>
+                        <p>One of the definitive papers on compressed suffix arrays and entropy-sensitive text indexing.
+                        </p>
+                        <div class="timeline-links">
+                            <a href="https://dl.acm.org/doi/pdf/10.1145/335305.335351" target="_blank"
+                                rel="noreferrer">PDF</a>
+                        </div>
+                    </article>
+
+                    <article class="timeline-card survey">
+                        <header>
+                            <h3>Inverted Files for Text Search Engines</h3>
+                            <span class="timeline-year">2006</span>
+                        </header>
+                        <p class="timeline-authors">Justin Zobel, Alistair Moffat</p>
+                        <p>Standard survey paper on inverted indexes and large-scale search engine indexing.</p>
+                        <div class="timeline-links">
+                            <a href="https://doi.org/10.1145/1132956.1132959" target="_blank" rel="noreferrer">DOI</a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="footer-card">
+            <h2 id="reading-order">Suggested Reading Order</h2>
+            <p>
+                For a fast but serious path through the field, read in this order:
+            </p>
+            <ol>
+                <li>Bayer and McCreight on B-trees</li>
+                <li>Guttman on R-trees</li>
+                <li>Manber and Myers on suffix arrays</li>
+                <li>O'Neil et al. on LSM-trees</li>
+                <li>Ferragina and Manzini on the FM-index</li>
+                <li>Grossi and Vitter on compressed suffix arrays</li>
+                <li>Zobel and Moffat on inverted files</li>
+            </ol>
+        </section>
+    </main>
+</body>
+
+</html>
