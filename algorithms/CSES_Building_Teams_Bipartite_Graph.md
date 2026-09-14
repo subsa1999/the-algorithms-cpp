@@ -19,18 +19,6 @@ If no valid assignment exists, print `IMPOSSIBLE`.
 - `1 <= m <= 200000`
 - Each friendship is bidirectional.
 
-## Important correction
-
-The originally supplied code performs BFS from pupil `1`, stores parents, and reconstructs a shortest path to pupil `n`. That is the solution pattern for **CSES Message Route**, not Building Teams.
-
-For Building Teams:
-
-- We do not need a shortest path.
-- We do not need a `parent` array.
-- We must assign one of two colors to every node.
-- We must process every connected component, not only the component containing node `1`.
-- We must detect a conflict when two adjacent nodes receive the same color.
-
 ## Graph interpretation
 
 Treat:
